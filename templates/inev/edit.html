@@ -25,14 +25,14 @@
 	<div class='inExpl'><label for='area'>Em caso de desencontro no dia do Abando, vamos telefonar esse número.</label></div>
 </div><br/>
 <div class='input textAreaInput {{ errors.born }}'>
-	<div id="ageWarning">Você deverá ter {{ event.min_age }} anos ou mais no dia {{ event.starts_at }}. Caso tenha dúvidas, <a href='http://abando.com.br/contato/' target='contatoAbando'>entre em contato com a equipe</a>.</div>
+	<div id="ageWarning">Você deverá ter {{ event.min_age }} anos ou mais no dia {{ event.starts_at|date:'DATE_FORMAT'|lower }}. Caso tenha dúvidas, <a href='http://abando.com.br/contato/' target='contatoAbando'>entre em contato com a equipe</a>.</div>
 	<div class='inPerg'><label for='born'>Data de nascimento:</label></div>
 	<div class='inResp'>{{ inputs.born }}</div>
 	<div class='inExpl'><label for='born'>Informe no formato DD/MM/AAAA.</label></div>
 </div><br/>
-<div class='input dropDownInput {{ errors.shirtSize }}'>
-	<div class='inPerg'><label for='shirtSize'>Tamanho da camiseta:</label></div>
-	<div class='inResp'>{{ inputs.shirtSize }}</div>
+<div class='input dropDownInput {{ errors.shirt_size }}'>
+	<div class='inPerg'><label for='shirt_size'>Tamanho da camiseta:</label></div>
+	<div class='inResp'>{{ inputs.shirt_size }}</div>
 </div><br/>
 <div class='input textAreaInput'>
 	<div class='inPerg'><label for='blood'>Tipo sanguíneo: <em>(apenas se souber)</em></label></div>
@@ -40,8 +40,8 @@
 	<div class='inExpl'><label for='blood'>Informe tipo e fator Rh, por exemplo, O+, AB&minus;, etc.</label></div>
 </div><br/>
 <div class='input yesNoInput'>
-	<div class='inPerg'><label for='healthInsured'>Possui plano de saúde particular?</label></div>
-	<div class='inResp'>{{ inputs.healthInsured }}</div>
+	<div class='inPerg'><label for='health_insured'>Possui plano de saúde particular?</label></div>
+	<div class='inResp'>{{ inputs.health_insured }}</div>
 </div><br/>
 <div class='input textAreaInput {{ errors.contact }}'>
 	<div class='inPerg'><label for='contact'>Contato para emergências:</label></div>
