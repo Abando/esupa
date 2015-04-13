@@ -1,26 +1,25 @@
 from django.contrib import admin
+from . import models
 
-from inev import models
-
-class OpcionalInline(admin.TabularInline):
-	model = models.Opcional
+class OptionalInline(admin.TabularInline):
+	model = models.Optional
 	extra = 0
 
-class EventoAdmin(admin.ModelAdmin):
-	inlines = [OpcionalInline]
+class EventAdmin(admin.ModelAdmin):
+	inlines = [OptionalInline]
 
-admin.site.register(models.Evento, EventoAdmin)
+admin.site.register(models.Event, EventAdmin)
 
-class OptadoInline(admin.TabularInline):
-	model = models.Optado
+class OptedInline(admin.TabularInline):
+	model = models.Opted
 	extra = 0
 
-class TransacaoInline(admin.TabularInline):
-	model = models.Transacao
+class TransactionInline(admin.TabularInline):
+	model = models.Transaction
 	extra = 0
 
-class InscricaoAdmin(admin.ModelAdmin):
-	inlines = [OptadoInline, TransacaoInline]
+class SubscriptionAdmin(admin.ModelAdmin):
+	inlines = [OptedInline, TransactionInline]
 
-admin.site.register(models.Inscricao, InscricaoAdmin)
+admin.site.register(models.Subscription, SubscriptionAdmin)
 

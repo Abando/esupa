@@ -1,58 +1,58 @@
-# -*- encoding: utf-8 -*-
-from django.db import models
 from django.contrib.auth.models import User
+from django.db import models
 
-PrecoField = lambda:models.DecimalField(max_digits=7, decimal_places=2)
+PriceField = lambda:models.DecimalField(max_digits=7, decimal_places=2)
 
-class Evento(models.Model):
-	nome = models.CharField(max_length=20)
-	quandoAcontece = models.DateTimeField()
-	idadeMinima = models.IntegerField(default=0)
-	preco = PrecoField()
-	inscricoesAbertas = models.BooleanField(default=False)
-	inscricoesQuandoAbrir = models.DateTimeField(null=True)
-	vendasAbertas = models.BooleanField(default=False)
-	vendasQuandoAbrir = models.DateTimeField(null=True)
-	def __str__(self): return self.nome
+class Event(models.Model):
+	name = models.CharField(max_length=20)
+	starts_at = models.DateTimeField()
+	min_age = models.IntegerField(default=0)
+	price = PriceField()
+	capacity = models.IntegerField()
+	subs_open = models.BooleanField(default=False)
+	subs_start_at = models.DateTimeField(null=True)
+	sales_open = models.BooleanField(default=False)
+	sales_start_at = models.DateTimeField(null=True)
+	def __str__(self): return self.name
 
-class Opcional(models.Model):
-	evento = models.ForeignKey(Evento)
-	nome = models.CharField(max_length=20)
-	preco = PrecoField()
-	vagasLimitadas = models.BooleanField(default=False)
-	def __str__(self): return self.nome
+class Optional(models.Model):
+	event = models.ForeignKey(Event)
+	name = models.CharField(max_length=20)
+	price = PriceField()
+	capacity = models.IntegerField(null=True)
+	def __str__(self): return self.name
 
-class Inscricao(models.Model):
-	evento = models.ForeignKey(Evento)
+class Subscription(models.Model):
+	event = models.ForeignKey(Event)
 	user = models.ForeignKey(User, null=True)
-	cracha = models.CharField(max_length=30)
-	quandoCriou = models.DateTimeField()
-	posicao = models.IntegerField(null=True)
-	quitado = models.BooleanField(default=False)
-	quandoQuitou = models.DateTimeField(null=True)
-	def __str__(self): return self.cracha
+	badge = models.CharField(max_length=30)
+	created_at = models.DateTimeField()
+	position = models.IntegerField(null=True)
+	paid = models.BooleanField(default=False)
+	paid_at = models.DateTimeField(null=True)
+	def __str__(self): return self.badge
 
-class Optado(models.Model):
-	opcional = models.ForeignKey(Opcional)
-	inscricao = models.ForeignKey(Inscricao)
-	quitado = models.BooleanField(default=False)
+class Opted(models.Model):
+	optional = models.ForeignKey(Optional)
+	subscription = models.ForeignKey(Subscription)
+	paid = models.BooleanField(default=False)
 
-class Transacao(models.Model):
-	DEPOSITO = 'D'
+class Transaction(models.Model):
+	DEPOSIT = 'D'
 	PAGSEGURO = 'P'
-	EM_MAOS = 'M'
-	FORMAS_DE_PAGAMENTO = (
-		(DEPOSITO, 'Depósito Bancário'),
+	CASH = 'C'
+	METHODS = (
+		(DEPOSIT, 'Depósito Bancário'),
 		(PAGSEGURO, 'PagSeguro'),
-		(EM_MAOS, 'Em Mãos'),
+		(CASH, 'Em Mãos'),
 	)
-	inscricao = models.ForeignKey(Inscricao)
-	recipiente = models.CharField(max_length=10)
-	iniciada = models.DateTimeField()
-	encerrada = models.DateTimeField(null=True)
-	completada = models.BooleanField(default=False)
-	valor = PrecoField()
-	formaDePagamento = models.CharField(
-		max_length=1, choices=FORMAS_DE_PAGAMENTO, default=EM_MAOS)
-	codigoDocumento = models.CharField(max_length=50)
-	anotacoes = models.TextField()
+	subscription = models.ForeignKey(Subscription)
+	payee = models.CharField(max_length=10)
+	started_at = models.DateTimeField()
+	ended_at = models.DateTimeField(null=True)
+	accepted = models.BooleanField(default=False)
+	value = PriceField()
+	method = models.CharField(max_length=1, choices=METHODS, default=CASH)
+	document = models.CharField(max_length=50)
+	notes = models.TextField()
+
