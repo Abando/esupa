@@ -3,6 +3,7 @@ from django.http import HttpResponse
 from django.shortcuts import render
 from django.template import RequestContext, loader
 from django.utils import timezone
+from .forms import SubscriptionForm
 from .models import Event, Subscription
 
 def get_event():
@@ -12,9 +13,8 @@ def get_event():
 	queryset = queryset.order_by('starts_at')
 	return queryset.first()
 
-def get_subscription(user):
+def get_subscription(event, user):
 	"""Takes existing subscription if available, creates a new one otherwise."""
-	event = get_event()
 	queryset = Subscription.objects
 	queryset = queryset.filter(event = event, user = user)
 	result = queryset.first()
@@ -22,25 +22,14 @@ def get_subscription(user):
 		result = Subscription(event = event, user = user)
 	return result
 
-def index(request):
-	return edit(request)
-
-def edit(request):
-	context = {
-		'errors': {},
-		'inputs': get_subscription(request.user),
-		'event': get_event(),
-		'optionals': [],
-	}
+def index(request, cmd=None):
+	# TODO: make view mode
+	event = get_event()
+	subscription = get_subscription(event, request.user)
+	form = SubscriptionForm(subscription)
+	context = {'form': form}
 	return render(request, 'inev/edit.html', context)
 
-def view(request):
-	context = {
-		'inputs': {},
-		'event': get_event(),
-		'optionals': [],
-	}
-	return render(request, 'inev/view.html', context)
-
-edit = login_required(edit)
-view = login_required(view)
+index = login_required(index)
+view = lambda req:index(req, 'view')
+edit = lambda req:index(req, 'edit')

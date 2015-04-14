@@ -1,68 +1,7 @@
 <form method='post' class='formInscricao'>
-<div class='input textInput {{ errors.full_name }}'>
-	<div class='inPerg'><label for='full_name'>Nome completo:</label></div>
-	<div class='inResp'>{{ inputs.full_name }}</div>
-	<div class='inExpl'><label for='full_name'>Conforme documentação legal.</label></div>
-</div><br/>
-<div class='input textAreaInput {{ errors.document }}'>
-	<div class='inPerg'><label for='document'>Registro geral (RG):</label></div>
-	<div class='inResp'>{{ inputs.document }}</div>
-	<div class='inExpl'><label for='document'>Informe número e órgão expeditor. Caso não tenha RG, coloque o número de outro documento, como CNH ou Passaporte.</label></div>
-</div><br/>
-<div class='input textInput {{ errors.badge }}'>
-	<div class='inPerg'><label for='badge'>Crachá:</label></div>
-	<div class='inResp'>{{ inputs.badge }}</div>
-	<div class='inExpl'><label for='badge'>O nome que será impresso no seu crachá (badge).</label></div>
-</div><br/>
-<div id="boxEmailInput" class='input textInput {{ errors.email }}'>
-	<div class='inPerg'><label for='email'>E-mail:</label></div>
-	<div class='inResp'>{{ inputs.email }}</div>
-	<div class='inExpl'><label for='email'>Para contato até o dia do Abando.</label></div>
-</div><br/>
-<div class='input textInput {{ errors.phone }}'>
-	<div class='inPerg'><label for='area'>Telefone celular:</label></div>
-	<div class='inResp'>({{ inputs.area }}) {{ inputs.phone }}</div>
-	<div class='inExpl'><label for='area'>Em caso de desencontro no dia do Abando, vamos telefonar esse número.</label></div>
-</div><br/>
-<div class='input textAreaInput {{ errors.born }}'>
-	<div id="ageWarning">Você deverá ter {{ event.min_age }} anos ou mais no dia {{ event.starts_at|date:'DATE_FORMAT'|lower }}. Caso tenha dúvidas, <a href='http://abando.com.br/contato/' target='contatoAbando'>entre em contato com a equipe</a>.</div>
-	<div class='inPerg'><label for='born'>Data de nascimento:</label></div>
-	<div class='inResp'>{{ inputs.born }}</div>
-	<div class='inExpl'><label for='born'>Informe no formato DD/MM/AAAA.</label></div>
-</div><br/>
-<div class='input dropDownInput {{ errors.shirt_size }}'>
-	<div class='inPerg'><label for='shirt_size'>Tamanho da camiseta:</label></div>
-	<div class='inResp'>{{ inputs.shirt_size }}</div>
-</div><br/>
-<div class='input textAreaInput'>
-	<div class='inPerg'><label for='blood'>Tipo sanguíneo: <em>(apenas se souber)</em></label></div>
-	<div class='inResp'>{{ inputs.blood }}</div>
-	<div class='inExpl'><label for='blood'>Informe tipo e fator Rh, por exemplo, O+, AB&minus;, etc.</label></div>
-</div><br/>
-<div class='input yesNoInput'>
-	<div class='inPerg'><label for='health_insured'>Possui plano de saúde particular?</label></div>
-	<div class='inResp'>{{ inputs.health_insured }}</div>
-</div><br/>
-<div class='input textAreaInput {{ errors.contact }}'>
-	<div class='inPerg'><label for='contact'>Contato para emergências:</label></div>
-	<div class='inResp'>{{ inputs.contact }}</div>
-	<div class='inExpl'><label for='contact'>Informe nome, relação, e número de telefone (com DDD)</label></div>
-</div><br/>
-<div class='input textAreaInput'>
-	<div class='inPerg'><label for='medication'>Informações médicas rotineiras e de emergência:</label></div>
-	<div class='inResp'>{{ inputs.medication }}</div>
-	<div class='inExpl'><label for='medication'>Medicação sendo tomada, medicação para crises, pressão alta, diabetes, problemas respiratórios, do coração, alergias (alimentares e medicamentosas), qualquer problema ou condição que necessite de cuidado especial.</label></div>
-</div><br/>
-{% for optional in optionals %}
-<div class='input yesNoInput'>
-	<div class='inPerg'>{{ optional.name }} ({{ optional.price }}).</div>
-	<div class='inResp'>{{ optional.input }}</div>
-</div><br/>
-{% endfor %}
-<div class='input yesNoInput {{ errors.agreed }}'>
-	<div class='inPerg'>Tenho ciência do <a target='_blank' href='http://abando.com.br/regulamento/'>termo de compromisso</a>.</div>
-	<div class='inResp'>{{ inputs.agreed }}</div>
-</div><br/>
+<table>
+{{form}}
+</table>
 <div class='input buttonInput'>
 	<input type='submit' value=' PRÓXIMO ' class="btEnviar" /><br />
 </div>

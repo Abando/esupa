@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from django.db import models
+from django.utils.timezone import now
 
 PriceField = lambda:models.DecimalField(max_digits=7, decimal_places=2)
 
@@ -25,7 +26,7 @@ class Optional(models.Model):
 class Subscription(models.Model):
 	event = models.ForeignKey(Event)
 	user = models.ForeignKey(User, null=True)
-	created_at = models.DateTimeField()
+	created_at = models.DateTimeField(default=now, blank=True)
 	full_name = models.CharField(max_length=80)
 	document = models.CharField(max_length=30)
 	badge = models.CharField(max_length=30)
@@ -38,6 +39,7 @@ class Subscription(models.Model):
 	health_insured = models.BooleanField(default=False)
 	contact = models.TextField()
 	medication = models.TextField()
+	optionals = models.ManyToManyField(Optional, through = 'Opted')
 	agreed = models.BooleanField(default=False)
 	position = models.IntegerField(null=True, blank=True)
 	paid = models.BooleanField(default=False)
@@ -67,4 +69,3 @@ class Transaction(models.Model):
 	method = models.CharField(max_length=1, choices=METHODS, default=CASH)
 	document = models.CharField(max_length=50)
 	notes = models.TextField()
-
