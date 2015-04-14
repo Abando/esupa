@@ -28,7 +28,7 @@ def index(request, cmd=None):
 	subscription = get_subscription(event, request.user)
 	form = SubscriptionForm(subscription)
 	context = {'form': form}
-	return render(request, 'inev/edit.html', context)
+	return render(request, 'esupa/form.html', context)
 
 index = login_required(index)
 view = lambda req:index(req, 'view')
