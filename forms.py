@@ -1,4 +1,7 @@
 from django import forms
+from django.forms import widgets
+from django.utils import formats
+from django.utils.html import escape
 
 class SubscriptionForm(forms.Form):
 	full_name = forms.CharField(
@@ -19,7 +22,6 @@ class SubscriptionForm(forms.Form):
 	born = forms.DateField(
 		label = 'Data de nascimento',
 		input_formats = '%Y-%m-%d %m/%d/%Y %m/%d/%y'.split(),
-		#Você deverá ter {{ event.min_age }} anos ou mais no dia {{ event.starts_at|date:'DATE_FORMAT'|lower }}. Caso tenha dúvidas, <a href='http://abando.com.br/contato/' target='contatoAbando'>entre em contato com a equipe</a>.
 		help_text = 'Informe no formato DD/MM/AAAA.')
 	shirt_size = forms.ChoiceField(
 		label = 'Tamanho da camiseta',
@@ -33,18 +35,37 @@ class SubscriptionForm(forms.Form):
 		label = 'Possui plano de saúde particular?')
 	contact = forms.CharField(
 		label = 'Contato para emergências',
-		widget = forms.Textarea,
+		widget = widgets.Textarea,
 		help_text = 'Informe nome, relação, e número de telefone (com DDD).')
 	medication = forms.CharField(
 		label = 'Informações médicas rotineiras e de emergência',
 		required = False,
-		widget = forms.Textarea,
+		widget = widgets.Textarea,
 		help_text = 'Medicação sendo tomada, medicação para crises, pressão alta, diabetes, problemas respiratórios, do coração, alergias (alimentares e medicamentosas), qualquer problema ou condição que necessite de cuidado especial.')
 	optionals = forms.ModelMultipleChoiceField(
 		queryset = None,
-		widget = forms.CheckboxSelectMultiple)
+		widget = widgets.CheckboxSelectMultiple)
 	agreed = forms.BooleanField(
 		label = 'Concordo em seguir o código de conduta.')
 	def __init__(self, subscription, *args, **kwargs):
+		event = subscription.event
 		forms.Form.__init__(self, *args, **kwargs)
-		self.fields['optionals'].queryset = subscription.event.optional_set
+		self.fields['optionals'].queryset = event.optional_set
+		self._add_age_warning(subscription.event)
+	def freeze(self):
+		for field in self.fields.values():
+			field.widget = DisplayWidget()
+			field.help_text = None
+	def _add_age_warning(self, event):
+		if not event.min_age:
+			return
+		when = formats.date_format(event.starts_at, 'DATE_FORMAT').lower()
+		warning = ' Você deverá ter %d anos ou mais no dia %s.' % (event.min_age, when)
+		self.fields['born'].help_text += warning
+
+class DisplayWidget(widgets.Widget):
+	def render(self, name, value, attrs=None):
+		if value:
+			return escape('Oi\nOi').replace('\n', '<br>')
+		else:
+			return '-'

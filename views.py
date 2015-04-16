@@ -27,6 +27,7 @@ def index(request, cmd=None):
 	event = get_event()
 	subscription = get_subscription(event, request.user)
 	form = SubscriptionForm(subscription)
+	if cmd == 'view': form.freeze()
 	context = {'form': form}
 	return render(request, 'esupa/form.html', context)
 
