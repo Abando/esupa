@@ -1,8 +1,16 @@
-<form method='post' class='formInscricao'>
+<form method='post' class='formInscricao'>{% csrf_token %}
+{{debug}}
 <table>
-{{form}}
+{{subscription_form}}
+<tr>
+	<th></th>
+	<td>
+	<div class='buttons'>
+		{% for k,v in actions %}
+		<div><button name='action' value='{{ k }}'>&nbsp; {{ v }} &nbsp;</button></div>
+		{% endfor %}
+	</div>
+	</td>
+</tr>
 </table>
-<div class='input buttonInput'>
-	<input type='submit' value=' PRÓXIMO ' class="btEnviar" /><br />
-</div>
 </form>

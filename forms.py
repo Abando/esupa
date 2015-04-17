@@ -43,6 +43,7 @@ class SubscriptionForm(forms.Form):
 		widget = widgets.Textarea,
 		help_text = 'Medicação sendo tomada, medicação para crises, pressão alta, diabetes, problemas respiratórios, do coração, alergias (alimentares e medicamentosas), qualquer problema ou condição que necessite de cuidado especial.')
 	optionals = forms.ModelMultipleChoiceField(
+		label = '',
 		queryset = None,
 		widget = widgets.CheckboxSelectMultiple)
 	agreed = forms.BooleanField(
@@ -63,9 +64,10 @@ class SubscriptionForm(forms.Form):
 		warning = ' Você deverá ter %d anos ou mais no dia %s.' % (event.min_age, when)
 		self.fields['born'].help_text += warning
 
+
 class DisplayWidget(widgets.Widget):
 	def render(self, name, value, attrs=None):
 		if value:
-			return escape('Oi\nOi').replace('\n', '<br>')
+			return escape(value).replace('\n', '<br>')
 		else:
 			return '-'
