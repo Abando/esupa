@@ -24,9 +24,25 @@ class Optional(models.Model):
 	def __str__(self): return self.name
 
 class Subscription(models.Model):
+	NEW = 0
+	ACCEPTABLE = 11
+	WAITING = 33
+	VERIFYING = 66
+	UNPAID_STAFF = 88
+	CONFIRMED = 99
+	STATES = (
+		(NEW,          'Nova'),
+		(ACCEPTABLE,   'Preenchida'),
+		(WAITING,      'Aguardando pagamento'),
+		(VERIFYING,    'Verificando pagamento'),
+		(UNPAID_STAFF, 'Tripulante não pago'),
+		(CONFIRMED,    'Confirmada'),
+	)
 	event = models.ForeignKey(Event)
 	user = models.ForeignKey(User, null=True)
 	created_at = models.DateTimeField(default=now, blank=True)
+	state = models.IntegerField(default=NEW, choices=STATES)
+	wait_until = models.DateTimeField(null=True, blank=True)
 	full_name = models.CharField(max_length=80)
 	document = models.CharField(max_length=30)
 	badge = models.CharField(max_length=30)
@@ -62,10 +78,12 @@ class Transaction(models.Model):
 	)
 	subscription = models.ForeignKey(Subscription)
 	payee = models.CharField(max_length=10)
-	started_at = models.DateTimeField()
+	value = PriceField()
+	created_at = models.DateTimeField(default=now, blank=True)
 	ended_at = models.DateTimeField(null=True, blank=True)
 	accepted = models.BooleanField(default=False)
-	value = PriceField()
+	verifier = models.ForeignKey(User, null=True)
+	verified_at = models.DateTimeField(null=True, blank=True)
 	method = models.CharField(max_length=1, choices=METHODS, default=CASH)
-	document = models.CharField(max_length=50)
+	document = models.BinaryField()
 	notes = models.TextField()
