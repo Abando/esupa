@@ -44,6 +44,7 @@ class SubscriptionForm(forms.Form):
 		help_text = 'Medicação sendo tomada, medicação para crises, pressão alta, diabetes, problemas respiratórios, do coração, alergias (alimentares e medicamentosas), qualquer problema ou condição que necessite de cuidado especial.')
 	optionals = forms.ModelMultipleChoiceField(
 		label = '',
+		required = False,
 		queryset = None,
 		widget = widgets.CheckboxSelectMultiple)
 	agreed = forms.BooleanField(
@@ -63,7 +64,6 @@ class SubscriptionForm(forms.Form):
 		when = formats.date_format(event.starts_at, 'DATE_FORMAT').lower()
 		warning = ' Você deverá ter %d anos ou mais no dia %s.' % (event.min_age, when)
 		self.fields['born'].help_text += warning
-
 
 class DisplayWidget(widgets.Widget):
 	def render(self, name, value, attrs=None):

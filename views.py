@@ -6,13 +6,13 @@ from django.shortcuts import redirect, render
 from django.template import RequestContext, loader
 from django.utils import timezone
 from .forms import SubscriptionForm
-from .models import Event, Subscription
+from .models import Event, Subscription, SubsState
 from .payment import Processor, Deposit
 
 def get_event():
 	"""Takes first Event set in the future."""
 	queryset = Event.objects
-	queryset = queryset.filter(starts_at__gt = timezone.now())
+	queryset = queryset.filter(starts_at__gt = timezone.now(), subs_open = True)
 	queryset = queryset.order_by('starts_at')
 	return queryset.first()
 
@@ -29,45 +29,47 @@ def get_subscription(event, user):
 def index(request):
 	event = get_event()
 	subscription = get_subscription(event, request.user)
-	state = Subscription.state # UNCONFIRMED WAITING VERIFYING UNPAID_STAFF CONFIRMED
-	action = request.POST.get('action')
+	action = request.POST.get('action', default='view')
+	if action == 'pay_processor' and subscription.can_enter_queue():
+		processor = Processor(subscription)
+		processor.create_transaction()
+		return redirect(processor.url)
+	state = subscription.state
+	context = {}
 	if request.method == 'POST' and action == 'save':
 		form = SubscriptionForm(subscription, request.POST)
 	elif subscription.id:
 		form = SubscriptionForm(subscription, model_to_dict(subscription))
 	else:
 		form = SubscriptionForm(subscription)
+	context['subscription_form'] = form
+	context['actions'] = actions = []
 	if form.is_valid() and action != 'edit':
 		form.freeze()
-		actions = []
-		if state < Subscription.WAITING:
+		if state < SubsState.WAITING:
 			actions.append(('edit', 'Editar'))
 	else:
-		actions = [('save', 'Salvar')]
-	actions = (
-		('edit',    'Editar',                      state < Subscription.WAITING),
-		('pay',     'Pagar com Cartão',            state < Subscription.VERIFYING),
-		('deposit', 'Pagar com Depósito Bancário', state < Subscription.VERIFYING))
-	else:
-	actions = filter(lambda x:x[2], actions)
-	context = { 'subscription_form': form, 'actions': actions }
-	if action == 'pay':
-		processor = Processor(subscription)
-		processor.create_transaction()
-		return redirect(processor.url)
-	#context['debug'] = repr(request.POST.get('action'))
+		actions.append(('save', 'Salvar'))
+	if action == 'save':
+		for field in form.fields:
+			subscription.fields[field] = form.fields[field]
+		repr(subscription)
+	# TODO: retrieve transactions, potentially update state depending on action
+	if event.sales_open and SubsState.ACCEPTABLE <= state < SubsState.VERIFYING:
+		if event.can_enter_queue():
+			actions.append(('pay_deposit',   'Pagar com Depósito Bancário'))
+			actions.append(('pay_processor', 'Pagar com PagSeguro'))
+		else:
+			actions.append(('pay_none',      'Entrar na fila de pagamento'))
 	return render(request, 'esupa/form.html', context)
 
 @login_required
 def see_transaction_document(request, tid):
 	# TODO: Add ETag generation & verification… maybe… eventually…
 	trans = Transaction.objects.get(id=tid)
-	if trans == None:
-		raise Http404()
-	image = trans.document
-	if not image:
+	if trans == None or not trans.document:
 		raise Http404()
 	if not request.user.is_staff and trans.subscription.user != request.user:
 		raise PermissionDenied()
-	response = HttpResponse(image, mimetype='image')
+	response = HttpResponse(trans.document, mimetype='image')
 	return response
