@@ -24,7 +24,7 @@ def within_capacity(subscription):
             pos = queue.index(sid)
             return pos < capacity
         except ValueError:
-            return True
+            return len(queue) < capacity
 
     event = subscription.event
     return _atomic_db_read(operation, event.id, subscription.id, event.capacity)
