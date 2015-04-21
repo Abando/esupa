@@ -12,7 +12,7 @@ class EnumField(models.SmallIntegerField):
 		models.SmallIntegerField.__init__(self, *args, **kwargs)
 	@classmethod
 	def get(cls, value):
-		for (key, desc) in cls.choices:
+		for (key, desc) in cls.echoices:
 			if key == value:
 				return desc
 
@@ -20,7 +20,7 @@ class PmtMethods(EnumField):
 	CASH = 0
 	DEPOSIT = 1
 	PROCESSOR = 2
-	choices = (
+	echoices = (
 		(CASH, 'Em Mãos'),
 		(DEPOSIT, 'Depósito Bancário'),
 		(PROCESSOR, 'PagSeguro'),
@@ -33,7 +33,7 @@ class SubsState(EnumField):
 	VERIFYING = 66
 	UNPAID_STAFF = 88
 	CONFIRMED = 99
-	choices = (
+	echoices = (
 		(NEW,          'Nova'),
 		(ACCEPTABLE,   'Preenchida'),
 		(WAITING,      'Aguardando pagamento'),
@@ -63,6 +63,10 @@ class Optional(models.Model):
 	name = models.CharField(max_length=20)
 	price = PriceField()
 	def __str__(self): return self.name
+
+class QueueContainer(models.Model):
+	event = models.OneToOneField(Event, primary_key=True)
+	data = models.TextField() # only because we're using json
 
 class Subscription(models.Model):
 	event = models.ForeignKey(Event)

@@ -8,6 +8,7 @@ from django.utils import timezone
 from .forms import SubscriptionForm
 from .models import Event, Subscription, SubsState
 from .payment import Processor, Deposit
+import .queue
 
 def get_event():
 	"""Takes first Event set in the future."""
@@ -30,7 +31,7 @@ def index(request):
 	event = get_event()
 	subscription = get_subscription(event, request.user)
 	action = request.POST.get('action', default='view')
-	if action == 'pay_processor' and subscription.can_enter_queue():
+	if action == 'pay_processor' and queue.within_capacity(subscription):
 		processor = Processor(subscription)
 		processor.create_transaction()
 		return redirect(processor.url)
@@ -42,6 +43,7 @@ def index(request):
 		form = SubscriptionForm(subscription, model_to_dict(subscription))
 	else:
 		form = SubscriptionForm(subscription)
+		form.email = request.user.email
 	context['subscription_form'] = form
 	context['actions'] = actions = []
 	if form.is_valid() and action != 'edit':
@@ -54,7 +56,8 @@ def index(request):
 		for field in form.fields:
 			subscription.fields[field] = form.fields[field]
 		repr(subscription)
-	# TODO: retrieve transactions, potentially update state depending on action
+	if action.startswith('pay'):
+		pass # do stuff
 	if event.sales_open and SubsState.ACCEPTABLE <= state < SubsState.VERIFYING:
 		if event.can_enter_queue():
 			actions.append(('pay_deposit',   'Pagar com Depósito Bancário'))
