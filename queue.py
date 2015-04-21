@@ -1,4 +1,5 @@
 # coding=utf-8
+from django.db import transaction
 from json import dumps, loads
 from threading import Lock
 from .models import QueueContainer, Subscription
@@ -76,10 +77,13 @@ def _atomic_db_write(operation, eid, *args, **kwargs):
 
 
 def update_all_subscriptions(event_id):
-    """Oh boy, this will take a while."""
-    with _lock:
+    """Oh boy, this will take a while. But it has to be done sometimes."""
+    with _lock, transaction.atomic():
         db, created = QueueContainer.get_or_create(id=event_id)
+        subscriptions = Subscription.objects.filter(event_id=event_id)
+        subscriptions.update(position=None)
         if created:
-            remaining = Subscription.objects.filter(event_id=event_id)
-            return remaining.update(position=None)
-        queue = loads(db.data)
+            return
+        count = 0
+        for sid in loads(db.data):
+            count += subscriptions.filter(id=sid).update(position=count)

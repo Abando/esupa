@@ -1,33 +1,23 @@
 # coding=utf-8
 from django.contrib import admin
-from . import models
+
+from .models import *
 
 
-class OptionalInline(admin.TabularInline):
-    model = models.Optional
-    extra = 0
+def register_with_tabular_inlines(my_type, *children_types):
+    def one_inline(target):
+        class MyInline(admin.TabularInline):
+            model = target
+            extra = 0
+
+        return MyInline
+
+    class MyAdmin(admin.ModelAdmin):
+        inlines = tuple(map(one_inline, children_types))
+
+    admin.site.register(my_type, MyAdmin)
 
 
-class EventAdmin(admin.ModelAdmin):
-    inlines = [OptionalInline]
-
-
-admin.site.register(models.Event, EventAdmin)
-
-
-class OptedInline(admin.TabularInline):
-    model = models.Opted
-    extra = 0
-
-
-class TransactionInline(admin.TabularInline):
-    model = models.Transaction
-    extra = 0
-
-
-class SubscriptionAdmin(admin.ModelAdmin):
-    inlines = [OptedInline, TransactionInline]
-
-
-admin.site.register(models.Subscription, SubscriptionAdmin)
-
+register_with_tabular_inlines(Event, Optional, Blacklist)
+register_with_tabular_inlines(Subscription, Opted, Transaction)
+admin.site.register(Blacklist)

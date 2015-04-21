@@ -1,6 +1,7 @@
 # coding=utf-8
 from django.contrib.auth.models import User
 from django.db import models
+from django.db.models import Q
 from django.utils.timezone import now
 
 PriceField = lambda: models.DecimalField(max_digits=7, decimal_places=2)
@@ -10,7 +11,7 @@ class EnumField(models.SmallIntegerField):
     # SmallIntegerField: "Values from -32768 to 32767 are safe in all databases supported by Django."
     def __init__(self, *args, **kwargs):
         if 'choices' not in kwargs:
-            kwargs['choices'] = type(self).choices
+            kwargs['choices'] = type(self).echoices
         models.SmallIntegerField.__init__(self, *args, **kwargs)
 
     @classmethod
@@ -35,16 +36,20 @@ class SubsState(EnumField):
     NEW = 0
     ACCEPTABLE = 11
     WAITING = 33
-    VERIFYING = 66
+    VERIFYING_PAY = 66
     UNPAID_STAFF = 88
     CONFIRMED = 99
+    VERIFYING_DATA = -1
+    DENIED = -9
     echoices = (
         (NEW, 'Nova'),
         (ACCEPTABLE, 'Preenchida'),
         (WAITING, 'Aguardando pagamento'),
-        (VERIFYING, 'Verificando pagamento'),
+        (VERIFYING_PAY, 'Verificando pagamento'),
         (UNPAID_STAFF, 'Tripulante não pago'),
         (CONFIRMED, 'Confirmada'),
+        (VERIFYING_DATA, 'Verificando dados'),
+        (DENIED, 'Rejeitada'),
     )
 
 
@@ -67,6 +72,9 @@ class Event(models.Model):
         add_count = lambda tu: tu + (sfilter(state=tu[0]).count(),)
         return map(add_count, Subscription.STATES)
 
+    def blacklist(self):
+        return Blacklist.objects.filter(expires__gt = now()).filter(Q(event=self) | Q(event__isnull=True))
+
 
 class Optional(models.Model):
     event = models.ForeignKey(Event)
@@ -82,10 +90,19 @@ class QueueContainer(models.Model):
     data = models.TextField()  # only because we're using json
 
 
+class Blacklist(models.Model):
+    event = models.ForeignKey(Event, null=True, blank=True)
+    pattern = models.CharField(max_length=30, help_text='https://docs.python.org/3/library/re.html')
+    expires = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return self.pattern
+
+
 class Subscription(models.Model):
     event = models.ForeignKey(Event)
     user = models.ForeignKey(User, null=True)
-    created_at = models.DateTimeField(default=now, blank=True)
+    created_at = models.DateTimeField(auto_now=True)
     state = SubsState(default=SubsState.NEW)
     wait_until = models.DateTimeField(null=True, blank=True)
     full_name = models.CharField(max_length=80)
@@ -120,7 +137,7 @@ class Transaction(models.Model):
     subscription = models.ForeignKey(Subscription)
     payee = models.CharField(max_length=10)
     value = PriceField()
-    created_at = models.DateTimeField(default=now, blank=True)
+    created_at = models.DateTimeField(auto_now=True)
     ended_at = models.DateTimeField(null=True, blank=True)
     accepted = models.BooleanField(default=False)
     verifier = models.ForeignKey(User, null=True)

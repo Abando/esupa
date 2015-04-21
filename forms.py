@@ -70,6 +70,22 @@ class SubscriptionForm(forms.Form):
         warning = ' Você deverá ter %d anos ou mais no dia %s.' % (event.min_age, when)
         self.fields['born'].help_text += warning
 
+    def copy_into(self, subscription):
+        # FIXME: replace with a smarter loop using self.fields
+        subscription.full_name      = self.full_name
+        subscription.document       = self.document
+        subscription.badge          = self.badge
+        subscription.email          = self.email
+        subscription.phone          = self.phone
+        subscription.born           = self.born
+        subscription.shirt_size     = self.shirt_size
+        subscription.blood          = self.blood
+        subscription.health_insured = self.health_insured
+        subscription.contact        = self.contact
+        subscription.medication     = self.medication
+        subscription.optionals      = self.optionals
+        subscription.agreed         = self.agreed
+
 
 class DisplayWidget(widgets.Widget):
     def render(self, name, value, attrs=None):
