@@ -14,4 +14,8 @@ class Processor:
 
 
 class Deposit:
-    pass
+    def __init__(self, subscription):
+        pass
+
+    def got_files(self, FILES):
+        pass

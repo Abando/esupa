@@ -58,7 +58,7 @@ class SubscriptionForm(forms.Form):
         forms.Form.__init__(self, *args, **kwargs)
         self.fields['optionals'].queryset = event.optional_set
         self._add_age_warning(subscription.event)
-        self.max_born = event.get_max_born()
+        self.max_born = event.max_born
 
     def clean_born(self):
         born = self.cleaned_data['born']

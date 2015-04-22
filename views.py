@@ -6,13 +6,13 @@ from django.http import Http404, HttpResponse
 from django.shortcuts import redirect, render
 from django.utils import timezone
 
+from . import payment
 from .forms import SubscriptionForm
-from .models import Event, Subscription, SubsState, Transaction
-from .payment import Processor
-from . import queue
+from .models import Event, PmtMethod, Subscription, SubsState, Transaction
+from .queue import QueueAgent
 
 
-def get_event():
+def get_event() -> Event:
     """Takes first Event set in the future."""
     queryset = Event.objects
     queryset = queryset.filter(starts_at__gt=timezone.now(), subs_open=True)
@@ -20,7 +20,7 @@ def get_event():
     return queryset.first()
 
 
-def get_subscription(event, user):
+def get_subscription(event, user) -> Subscription:
     """Takes existing subscription if available, creates a new one otherwise."""
     queryset = Subscription.objects
     queryset = queryset.filter(event=event, user=user)
@@ -36,17 +36,16 @@ def index(request):
     subscription = get_subscription(event, request.user)
     action = request.POST.get('action', default='view')
     state = subscription.state
-    within_capacity = queue.Cached(lambda:queue.within_capacity(subscription))
+    queue = QueueAgent(subscription)
 
-    # first order of business, redirect away if appropriate
-    if action == 'pay_processor' and event.sales_open and within_capacity():
-        processor = Processor(subscription)
-        processor.create_transaction()
-        return redirect(processor.url)
+    # redirect away if appropriate
+    if action == 'pay_processor' and event.sales_open and queue.within_capacity:
+        processor = payment.Processor(subscription)
+        return redirect(processor.create_transaction())
     elif state == SubsState.DENIED:
         raise PermissionDenied()
 
-    # second order of business: display subscription information no matter what
+    # display subscription information no matter what
     if request.method == 'POST' and action == 'save':
         form = SubscriptionForm(subscription, request.POST)
     elif subscription.id:
@@ -65,24 +64,35 @@ def index(request):
     else:
         buttons.append(('save', 'Salvar'))
 
-    # third order of business: perform appropriate saves if applicable
+    # perform appropriate saves if applicable
     if action == 'save' and form.is_valid() and SubsState.NEW <= state < SubsState.VERIFYING_PAY:
         form.copy_into(subscription)
         s = map(str.lower, (subscription.full_name, subscription.email, subscription.document, subscription.badge))
         b = tuple(map(str.lower, filter(bool, event.data_to_be_checked.splitlines())))
         acceptable = True not in (t in d for d in s for t in b)
         subscription.state = SubsState.ACCEPTABLE if acceptable else SubsState.VERIFYING_DATA
-        subscription.save()
-    if action.startswith('pay') and event.sales_open:
-        if not within_capacity():
-            position = queue.add(subscription)
-            context['debug'] = 'Posição %d' % position  # FIXME
-    if event.sales_open and SubsState.ACCEPTABLE <= state < SubsState.VERIFYING_PAY:
-        if within_capacity():
-            buttons.append(('pay_deposit', 'Pagar com Depósito Bancário'))
-            buttons.append(('pay_processor', 'Pagar com PagSeguro'))
-        else:
-            buttons.append(('pay_none', 'Entrar na fila de pagamento'))
+        subscription.save()  # action=save
+
+    # deal with payment related stuff
+    context['documents'] = subscription.transaction_set.filter(
+        filled_at__isnull=False).order_by('filled_at').values('id', 'filled_at', 'ended_at', 'accepted')
+    if event.sales_open or subscription.waiting:
+        context['upload'] = subscription.transaction_set.filter(
+            method=PmtMethod.DEPOSIT, ended_at__isnull=True).exists()
+        if action.startswith('pay'):
+            subscription.position = queue.add()
+            subscription.waiting = queue.within_capacity
+            if action == 'pay_deposit':
+                deposit = payment.Deposit(subscription)
+                deposit.got_files(request.FILES)
+        if SubsState.ACCEPTABLE <= state < SubsState.VERIFYING_PAY and action != 'edit':
+            if queue.within_capacity:
+                buttons.append(('pay_deposit', 'Pagar com depósito bancário'))
+                buttons.append(('pay_processor', 'Pagar com PagSeguro'))
+            else:
+                buttons.append(('pay_none', 'Entrar na fila de pagamento'))
+
+    # ...whew.
     return render(request, 'esupa/form.html', context)
 
 

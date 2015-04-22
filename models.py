@@ -1,5 +1,5 @@
 # coding=utf-8
-from datetime import date
+from datetime import date, datetime, timedelta
 
 from django.contrib.auth.models import User
 from django.db import models
@@ -22,7 +22,7 @@ class EnumField(models.SmallIntegerField):
                 return desc
 
 
-class PmtMethods(EnumField):
+class PmtMethod(EnumField):
     CASH = 0
     DEPOSIT = 1
     PROCESSOR = 2
@@ -64,6 +64,7 @@ class Event(models.Model):
     subs_start_at = models.DateTimeField(null=True, blank=True)
     sales_open = models.BooleanField(default=False)
     sales_start_at = models.DateTimeField(null=True, blank=True)
+    payment_wait_hours = models.IntegerField(default=48)
     data_to_be_checked = models.TextField(blank=True)
 
     def __str__(self):
@@ -74,7 +75,8 @@ class Event(models.Model):
         add_count = lambda tu: tu + (sfilter(state=tu[0]).count(),)
         return map(add_count, Subscription.STATES)
 
-    def get_max_born(self):
+    @property
+    def max_born(self):
         if self.min_age:
             return date(self.starts_at.year - self.min_age, self.starts_at.month, self.starts_at.day)
         else:
@@ -122,6 +124,17 @@ class Subscription(models.Model):
     def __str__(self):
         return self.badge
 
+    @property
+    def waiting(self):
+        return False if self.wait_until is None else self.wait_until < datetime.now()
+
+    @waiting.setter
+    def waiting(self, value):
+        if not value:
+            self.wait_until = None
+        elif not self.waiting: # do not reset wait time if it's already running.
+            self.wait_until = datetime.now() + timedelta(hours=self.event.payment_wait_hours)
+
 
 class Opted(models.Model):
     optional = models.ForeignKey(Optional)
@@ -134,10 +147,10 @@ class Transaction(models.Model):
     payee = models.CharField(max_length=10)
     value = PriceField()
     created_at = models.DateTimeField(auto_now=True)
-    ended_at = models.DateTimeField(null=True, blank=True)
-    accepted = models.BooleanField(default=False)
+    method = PmtMethod(default=PmtMethod.CASH)
+    document = models.BinaryField(null=True)
+    filled_at = models.DateTimeField(null=True, blank=True)
     verifier = models.ForeignKey(User, null=True)
-    verified_at = models.DateTimeField(null=True, blank=True)
-    method = PmtMethods(default=PmtMethods.CASH)
-    document = models.BinaryField()
+    accepted = models.BooleanField(default=False)
     notes = models.TextField(blank=True)
+    ended_at = models.DateTimeField(null=True, blank=True)
