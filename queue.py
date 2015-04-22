@@ -14,6 +14,19 @@ RabbitMQ. Let's not reinvent the wheel too much, shall we?
 _lock = Lock()  # this could be event specific, but for now let's keep it simple
 
 
+class Cached:
+    def __init__(self, fetcher):
+        self._value = fetcher
+        self._pending = True
+        self._lock = Lock()
+    def __call__(self):
+        with self._lock:
+            if self._pending:
+                self._value = self._value()
+                self._pending = False
+        return self._value
+
+
 def within_capacity(subscription):
     """Checks if subscription is trying to enter/use the queue under capacity."""
 

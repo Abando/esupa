@@ -36,9 +36,10 @@ def index(request):
     subscription = get_subscription(event, request.user)
     action = request.POST.get('action', default='view')
     state = subscription.state
+    within_capacity = queue.Cached(lambda:queue.within_capacity(subscription))
 
     # first order of business, redirect away if appropriate
-    if action == 'pay_processor' and event.sales_open and queue.within_capacity(subscription):
+    if action == 'pay_processor' and event.sales_open and within_capacity():
         processor = Processor(subscription)
         processor.create_transaction()
         return redirect(processor.url)
@@ -73,11 +74,11 @@ def index(request):
         subscription.state = SubsState.ACCEPTABLE if acceptable else SubsState.VERIFYING_DATA
         subscription.save()
     if action.startswith('pay') and event.sales_open:
-        if not queue.within_capacity(subscription):
+        if not within_capacity():
             position = queue.add(subscription)
             context['debug'] = 'Posição %d' % position  # FIXME
     if event.sales_open and SubsState.ACCEPTABLE <= state < SubsState.VERIFYING_PAY:
-        if queue.within_capacity(subscription):
+        if within_capacity():
             buttons.append(('pay_deposit', 'Pagar com Depósito Bancário'))
             buttons.append(('pay_processor', 'Pagar com PagSeguro'))
         else:
