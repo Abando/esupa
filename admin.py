@@ -18,6 +18,5 @@ def register_with_tabular_inlines(my_type, *children_types):
     admin.site.register(my_type, MyAdmin)
 
 
-register_with_tabular_inlines(Event, Optional, Blacklist)
+register_with_tabular_inlines(Event, Optional)
 register_with_tabular_inlines(Subscription, Opted, Transaction)
-admin.site.register(Blacklist)

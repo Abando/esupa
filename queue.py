@@ -24,7 +24,7 @@ def within_capacity(subscription):
             pos = queue.index(sid)
             return pos < capacity
         except ValueError:
-            return len(queue) < capacity
+            return False
 
     event = subscription.event
     return _atomic_db_read(operation, event.id, subscription.id, event.capacity)
@@ -61,14 +61,14 @@ get_snapshot = lambda event_id: _atomic_db_read(lambda q: q, event_id)
 
 def _atomic_db_read(operation, eid, *args, **kwargs):
     with _lock:
-        db, created = QueueContainer.get_or_create(id=eid)
+        db, created = QueueContainer.objects.get_or_create(event_id=eid)
         queue = [] if created else loads(db.data)
         return operation(queue, *args, **kwargs)
 
 
 def _atomic_db_write(operation, eid, *args, **kwargs):
     with _lock:
-        db, created = QueueContainer.get_or_create(id=eid)
+        db, created = QueueContainer.objects.get_or_create(event_id=eid)
         queue = [] if created else loads(db.data)
         result = operation(queue, *args, **kwargs)
         db.data = dumps(queue)
@@ -79,7 +79,7 @@ def _atomic_db_write(operation, eid, *args, **kwargs):
 def update_all_subscriptions(event_id):
     """Oh boy, this will take a while. But it has to be done sometimes."""
     with _lock, transaction.atomic():
-        db, created = QueueContainer.get_or_create(id=event_id)
+        db, created = QueueContainer.objects.get_or_create(event_id=event_id)
         subscriptions = Subscription.objects.filter(event_id=event_id)
         subscriptions.update(position=None)
         if created:

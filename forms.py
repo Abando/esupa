@@ -1,5 +1,6 @@
 # coding=utf-8
 from django import forms
+from django.core.exceptions import ValidationError
 from django.forms import widgets
 from django.utils import formats
 from django.utils.html import escape
@@ -57,6 +58,17 @@ class SubscriptionForm(forms.Form):
         forms.Form.__init__(self, *args, **kwargs)
         self.fields['optionals'].queryset = event.optional_set
         self._add_age_warning(subscription.event)
+        self.max_born = event.get_max_born()
+
+    def clean_born(self):
+        born = self.cleaned_data['born']
+        if born > self.max_born:
+            raise ValidationError(
+                'Somente nascidos antes de %(date)s.',
+                code='too_young',
+                params={'date': self.max_born},
+            )
+        return born
 
     def freeze(self):
         for field in self.fields.values():
@@ -72,19 +84,20 @@ class SubscriptionForm(forms.Form):
 
     def copy_into(self, subscription):
         # FIXME: replace with a smarter loop using self.fields
-        subscription.full_name      = self.full_name
-        subscription.document       = self.document
-        subscription.badge          = self.badge
-        subscription.email          = self.email
-        subscription.phone          = self.phone
-        subscription.born           = self.born
-        subscription.shirt_size     = self.shirt_size
-        subscription.blood          = self.blood
-        subscription.health_insured = self.health_insured
-        subscription.contact        = self.contact
-        subscription.medication     = self.medication
-        subscription.optionals      = self.optionals
-        subscription.agreed         = self.agreed
+        cd = self.cleaned_data
+        subscription.full_name      = cd['full_name']
+        subscription.document       = cd['document']
+        subscription.badge          = cd['badge']
+        subscription.email          = cd['email']
+        subscription.phone          = cd['phone']
+        subscription.born           = cd['born']
+        subscription.shirt_size     = cd['shirt_size']
+        subscription.blood          = cd['blood']
+        subscription.health_insured = cd['health_insured']
+        subscription.contact        = cd['contact']
+        subscription.medication     = cd['medication']
+        # subscription.optionals    = cd['optionals'] # um…
+        subscription.agreed         = cd['agreed']
 
 
 class DisplayWidget(widgets.Widget):

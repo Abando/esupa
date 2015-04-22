@@ -8,7 +8,6 @@ It's created for [Abando](http://www.abando.com.br/), an anual event in Brazil, 
 
 * Python 3
 * Django 1.8
-* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
 
 ### How do I get set up? ###
 

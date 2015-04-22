@@ -1,8 +1,9 @@
 # coding=utf-8
+from datetime import date
+
 from django.contrib.auth.models import User
 from django.db import models
-from django.db.models import Q
-from django.utils.timezone import now
+
 
 PriceField = lambda: models.DecimalField(max_digits=7, decimal_places=2)
 
@@ -63,6 +64,7 @@ class Event(models.Model):
     subs_start_at = models.DateTimeField(null=True, blank=True)
     sales_open = models.BooleanField(default=False)
     sales_start_at = models.DateTimeField(null=True, blank=True)
+    data_to_be_checked = models.TextField(blank=True)
 
     def __str__(self):
         return self.name
@@ -72,8 +74,11 @@ class Event(models.Model):
         add_count = lambda tu: tu + (sfilter(state=tu[0]).count(),)
         return map(add_count, Subscription.STATES)
 
-    def blacklist(self):
-        return Blacklist.objects.filter(expires__gt = now()).filter(Q(event=self) | Q(event__isnull=True))
+    def get_max_born(self):
+        if self.min_age:
+            return date(self.starts_at.year - self.min_age, self.starts_at.month, self.starts_at.day)
+        else:
+            return date.today()
 
 
 class Optional(models.Model):
@@ -87,16 +92,7 @@ class Optional(models.Model):
 
 class QueueContainer(models.Model):
     event = models.OneToOneField(Event, primary_key=True)
-    data = models.TextField()  # only because we're using json
-
-
-class Blacklist(models.Model):
-    event = models.ForeignKey(Event, null=True, blank=True)
-    pattern = models.CharField(max_length=30, help_text='https://docs.python.org/3/library/re.html')
-    expires = models.DateTimeField(null=True, blank=True)
-
-    def __str__(self):
-        return self.pattern
+    data = models.TextField(default='[]')  # only because we're using json
 
 
 class Subscription(models.Model):
@@ -115,8 +111,8 @@ class Subscription(models.Model):
     shirt_size = models.CharField(max_length=4)
     blood = models.CharField(max_length=3)
     health_insured = models.BooleanField(default=False)
-    contact = models.TextField()
-    medication = models.TextField()
+    contact = models.TextField(blank=True)
+    medication = models.TextField(blank=True)
     optionals = models.ManyToManyField(Optional, through='Opted')
     agreed = models.BooleanField(default=False)
     position = models.IntegerField(null=True, blank=True)
@@ -144,4 +140,4 @@ class Transaction(models.Model):
     verified_at = models.DateTimeField(null=True, blank=True)
     method = PmtMethods(default=PmtMethods.CASH)
     document = models.BinaryField()
-    notes = models.TextField()
+    notes = models.TextField(blank=True)
