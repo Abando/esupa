@@ -109,4 +109,9 @@ class DisplayWidget(widgets.Widget):
 
 
 class UploadForm(forms.Form):
-    upload = forms.FileField(label='Comprovante', help_text='Envie foto ou scan do comprovante de depósito.')
+    upload = forms.FileField(label='Comprovante')
+    def __init__(self, subscription, *args, **kwargs):
+        forms.Form.__init__(self, *args, **kwargs)
+        fmt = 'Deposite R$ %s na conta abaixo e envie foto ou scan do comprovante.\n%s'
+        msg = fmt % (subscription.price, subscription.event.deposit_info)
+        self.fields['upload'].help_text = msg.replace('\n', '\n<br/>')

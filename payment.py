@@ -1,25 +1,59 @@
 # coding=utf-8
 from datetime import datetime
+
 from django.core.exceptions import PermissionDenied
-from esupa.models import Subscription, Transaction, PmtMethod, SubsState
+from django.http import HttpResponse
+
+from esupa.models import PmtMethod, Subscription, Transaction
 
 
-class PagSeguroProcessor:
+class Processor:
     def __init__(self, subscription):
-        if not subscription.id:
-            raise PermissionDenied('Payment without subscription.')
         self.s = subscription
+        self._cart = None
 
-    def start_and_go(self) -> str:
+    @property
+    def cart(self):
+        if self._cart is None:
+            self._cart = [CartItem(self.s.event)]
+            self._cart.extend(map(CartItem, self.s.optionals.iterable()))
+        return self._cart
+
+    def generate_processor_url(self) -> str:
         raise NotImplementedError()
+
+
+class CartItem:
+    def __init__(self, other):
+        # We expect Event and Optional here. Python's duck typing ahoy!
+        self.id = other.id
+        self.name = other.name
+        self.price = other.price
+
+
+class PagSeguroProcessor(Processor):
+    def __init__(self, subscription):
+        Processor.__init__(subscription)
+
+    def generate_processor_url(self) -> str:
+        pass
 
     @staticmethod
     def callback(request):
         raise NotImplementedError()
 
 
-def callback_pagseguro(request):
-    return PagSeguroProcessor.callback(request)
+def get_processor(subscription) -> PagSeguroProcessor:
+    if not subscription.id:
+        raise PermissionDenied('Payment without subscription.')
+    # Add support for other processors here.
+    return PagSeguroProcessor(subscription)
+
+
+def processor_callback(slug, request):
+    if slug == 'pagseguro':
+        return PagSeguroProcessor.callback(request)
+    return HttpResponse(status=400)  # Bad Request
 
 
 class Deposit:
@@ -39,18 +73,11 @@ class Deposit:
         transaction.document = data
         transaction.filled_at = datetime.now()
         transaction.save()
-        if self.subscription.state < SubsState.VERIFYING_PAY:
-            self.subscription.state = SubsState.VERIFYING_PAY
-            self.subscription.save()
 
     def register_intent(self):
         transaction = self._get_or_create_transaction()
         if not transaction.id:
             transaction.save()
-        if self.subscription.state < SubsState.WAITING:
-            self.subscription.state = SubsState.WAITING
-            self.subscription.waiting = True
-            self.subscription.save()
 
     def _get_or_create_transaction(self) -> Transaction:
         return self.slot_qs.first() or Transaction(subscription=self.subscription, value=self.subscription.price,

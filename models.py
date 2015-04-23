@@ -9,44 +9,63 @@ from django.db import models
 PriceField = lambda: models.DecimalField(max_digits=7, decimal_places=2)
 
 
-class EnumField(models.SmallIntegerField):
-    # SmallIntegerField: "Values from -32768 to 32767 are safe in all databases supported by Django."
-    def __init__(self, *args, **kwargs):
-        if 'choices' not in kwargs:
-            kwargs['choices'] = type(self).echoices
-        models.SmallIntegerField.__init__(self, *args, **kwargs)
+class Enum:
+    choices = ()
+
+    @classmethod
+    def field(cls, **kwargs):
+        # SmallIntegerField: "Values from -32768 to 32767 are safe in all databases supported by Django."
+        return models.SmallIntegerField(choices=cls.choices, **kwargs)
 
     @classmethod
     def get(cls, value):
-        for (key, desc) in cls.echoices:
+        for (key, desc) in cls.choices:
             if key == value:
                 return desc
+            elif desc == value:
+                return key
+
+    def __init__(self, value):
+        for row in type(self).choices:
+            if value in row:
+                self._value = row[0]
+                self._descr = row[1]
+                return
+        raise ValueError()
+
+    def __str__(self):
+        return self._descr
+
+    def __repr__(self):
+        return '%s(%d)' % (str(type(self)), self._value)
 
 
-class PmtMethod(EnumField):
+class PmtMethod(Enum):
     CASH = 0
     DEPOSIT = 1
     PROCESSOR = 2
-    echoices = (
+    choices = (
         (CASH, 'Em Mãos'),
         (DEPOSIT, 'Depósito Bancário'),
         (PROCESSOR, 'PagSeguro'),
     )
 
 
-class SubsState(EnumField):
+class SubsState(Enum):
     NEW = 0
     ACCEPTABLE = 11
-    WAITING = 33
+    QUEUED_FOR_PAY = 33
+    EXPECTING_PAY = 55
     VERIFYING_PAY = 66
     UNPAID_STAFF = 88
     CONFIRMED = 99
     VERIFYING_DATA = -1
     DENIED = -9
-    echoices = (
+    choices = (
         (NEW, 'Nova'),
         (ACCEPTABLE, 'Preenchida'),
-        (WAITING, 'Aguardando pagamento'),
+        (QUEUED_FOR_PAY, 'Em fila para poder pagar'),
+        (EXPECTING_PAY, 'Aguardando pagamento'),
         (VERIFYING_PAY, 'Verificando pagamento'),
         (UNPAID_STAFF, 'Tripulante não pago'),
         (CONFIRMED, 'Confirmada'),
@@ -57,6 +76,7 @@ class SubsState(EnumField):
 
 class Event(models.Model):
     name = models.CharField(max_length=20)
+    slug = models.SlugField(blank=True)
     starts_at = models.DateTimeField()
     min_age = models.IntegerField(default=0)
     price = PriceField()
@@ -65,6 +85,7 @@ class Event(models.Model):
     subs_start_at = models.DateTimeField(null=True, blank=True)
     sales_open = models.BooleanField(default=False)
     sales_start_at = models.DateTimeField(null=True, blank=True)
+    deposit_info = models.TextField(blank=True)
     payment_wait_hours = models.IntegerField(default=48)
     data_to_be_checked = models.TextField(blank=True)
 
@@ -102,7 +123,7 @@ class Subscription(models.Model):
     event = models.ForeignKey(Event)
     user = models.ForeignKey(User, null=True)
     created_at = models.DateTimeField(auto_now=True)
-    state = SubsState(default=SubsState.NEW)
+    state = SubsState.field(default=SubsState.NEW)
     wait_until = models.DateTimeField(null=True, blank=True)
     full_name = models.CharField(max_length=80)
     document = models.CharField(max_length=30)
@@ -116,7 +137,7 @@ class Subscription(models.Model):
     health_insured = models.BooleanField(default=False)
     contact = models.TextField(blank=True)
     medication = models.TextField(blank=True)
-    optionals = models.ManyToManyField(Optional, through='Opted')
+    optionals = models.ManyToManyField(Optional)
     agreed = models.BooleanField(default=False)
     position = models.IntegerField(null=True, blank=True)
     paid = models.BooleanField(default=False)
@@ -124,6 +145,10 @@ class Subscription(models.Model):
 
     def __str__(self):
         return self.badge
+
+    def raise_state(self, state):
+        if self.state < state:
+            self.state = state
 
     @property
     def waiting(self) -> bool:
@@ -133,7 +158,7 @@ class Subscription(models.Model):
     def waiting(self, value):
         if not value:
             self.wait_until = None
-        elif not self.waiting: # do not reset wait time if it's already running.
+        elif not self.waiting:  # only reset wait time if it's not running.
             self.wait_until = datetime.now() + timedelta(hours=self.event.payment_wait_hours)
 
     @property
@@ -141,18 +166,12 @@ class Subscription(models.Model):
         return self.event.price + (self.optionals.aggregate(models.Sum('price'))['price__sum'] or 0)
 
 
-class Opted(models.Model):
-    optional = models.ForeignKey(Optional)
-    subscription = models.ForeignKey(Subscription)
-    paid = models.BooleanField(default=False)
-
-
 class Transaction(models.Model):
     subscription = models.ForeignKey(Subscription)
     payee = models.CharField(max_length=10)
     value = PriceField()
     created_at = models.DateTimeField(auto_now=True)
-    method = PmtMethod(default=PmtMethod.CASH)
+    method = PmtMethod.field(default=PmtMethod.CASH)
     document = models.BinaryField(null=True)
     filled_at = models.DateTimeField(null=True, blank=True)
     verifier = models.ForeignKey(User, null=True)

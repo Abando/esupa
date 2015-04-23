@@ -19,4 +19,4 @@ def register_with_tabular_inlines(my_type, *children_types):
 
 
 register_with_tabular_inlines(Event, Optional)
-register_with_tabular_inlines(Subscription, Opted, Transaction)
+register_with_tabular_inlines(Subscription, Transaction)

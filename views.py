@@ -1,23 +1,32 @@
 # coding=utf-8
+from datetime import datetime
+
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.forms.models import model_to_dict
 from django.http import Http404, HttpResponse
 from django.shortcuts import redirect, render
-from django.utils import timezone
 
 from .forms import SubscriptionForm, UploadForm
 from .models import Event, Subscription, SubsState, Transaction
-from .payment import Deposit, Processor
-from .queue import QueueAgent
+from .payment import Deposit, get_processor, processor_callback
+from .queue import QueueAgent, cron
 
 
-def get_event() -> Event:
-    """Takes first Event set in the future."""
-    queryset = Event.objects
-    queryset = queryset.filter(starts_at__gt=timezone.now())
-    queryset = queryset.order_by('starts_at')
-    return queryset.first()
+def get_event(slug=None) -> Event:
+    """Takes given event or first set in the future."""
+    if slug:
+        try:
+            return Event.objects.get(slug=slug)
+        except ObjectDoesNotExist:
+            raise Http404()
+    else:
+        e = Event.objects.filter(starts_at__gt=datetime.now()).order_by('starts_at').first()
+        if e:
+            return e
+        else:
+            raise Http404()
 
 
 def get_subscription(event, user) -> Subscription:
@@ -31,8 +40,8 @@ def get_subscription(event, user) -> Subscription:
 
 
 @login_required
-def index(request):
-    event = get_event()
+def view_subscribe(request, eslug=None):
+    event = get_event(eslug)
     subscription = get_subscription(event, request.user)
     action = request.POST.get('action', default='view')
     state = subscription.state
@@ -40,8 +49,8 @@ def index(request):
 
     # redirect away if appropriate
     if action == 'pay_processor' and event.sales_open and queue.within_capacity:
-        processor = Processor(subscription)
-        return redirect(processor.start_and_go())
+        processor = get_processor(subscription)
+        return redirect(processor.generate_processor_url())
     elif state == SubsState.DENIED:
         raise PermissionDenied()
 
@@ -59,13 +68,13 @@ def index(request):
         form.freeze()
     elif form.is_valid() and action != 'edit':
         form.freeze()
-        if SubsState.NEW <= state < SubsState.WAITING:
+        if SubsState.NEW <= state <= SubsState.QUEUED_FOR_PAY:
             buttons.append(('edit', 'Editar'))
     else:
         buttons.append(('save', 'Salvar'))
 
     # perform appropriate saves if applicable
-    if action == 'save' and form.is_valid() and SubsState.NEW <= state < SubsState.VERIFYING_PAY:
+    if action == 'save' and form.is_valid() and SubsState.NEW <= state <= SubsState.QUEUED_FOR_PAY:
         form.copy_into(subscription)
         s = map(str.lower, (subscription.full_name, subscription.email, subscription.document, subscription.badge))
         b = tuple(map(str.lower, filter(bool, event.data_to_be_checked.splitlines())))
@@ -76,21 +85,24 @@ def index(request):
     # deal with payment related stuff
     context['documents'] = subscription.transaction_set.filter(filled_at__isnull=False).values(
         'id', 'filled_at', 'ended_at', 'accepted')
-    if subscription.id and (event.sales_open or subscription.waiting):
+    if SubsState.ACCEPTABLE <= state <= SubsState.VERIFYING_PAY and (event.sales_open or subscription.waiting):
         deposit = Deposit(subscription)
-        if deposit.expecting_file:
-            context['upload_form'] = UploadForm()
         if action.startswith('pay'):
             subscription.position = queue.add()
-            if not queue.within_capacity:
-                subscription.waiting = False
+            subscription.waiting = queue.within_capacity
+            subscription.raise_state(SubsState.QUEUED_FOR_PAY if subscription.waiting else SubsState.EXPECTING_PAY)
+            if len(request.FILES):
+                deposit.got_file(request.FILES['upload'])
+                subscription.raise_state(SubsState.VERIFYING_PAY)
             elif action == 'pay_deposit':
-                if len(request.FILES):
-                    deposit.got_file(request.FILES['upload'])
-                else:
-                    deposit.register_intent()
-        if SubsState.ACCEPTABLE <= state < SubsState.VERIFYING_PAY and action != 'edit':
-            if queue.within_capacity:
+                deposit.register_intent()
+            subscription.save()  # action=pay
+        if deposit.expecting_file:
+            context['upload_form'] = UploadForm(subscription)
+        if action != 'edit':
+            if state == SubsState.VERIFYING_PAY:
+                buttons.append(('pay_deposit', 'Enviar outro comprovante'))
+            elif queue.within_capacity:
                 buttons.append(('pay_deposit', 'Pagar com depósito bancário'))
                 buttons.append(('pay_processor', 'Pagar com PagSeguro'))
             else:
@@ -110,3 +122,24 @@ def view_transaction_document(request, tid):
         raise PermissionDenied()
     response = HttpResponse(trans.document, mimetype='image')
     return response
+
+
+def view_cron(_, secret):
+    if secret != settings.ESUPA_CRON_SECRET:
+        raise PermissionDenied()
+    cron()
+
+
+def view_processor(request, slug):
+    return processor_callback(slug, request)
+
+
+@login_required
+def view_verify(request, slug=None):
+    if not request.user.is_staff:
+        raise PermissionDenied()
+    events = Event.objects
+    if slug:
+        events = events.filter(slug=slug)
+    context = {'events': events}
+    return render(request, 'esupa/verify.html', context)

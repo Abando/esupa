@@ -1,8 +1,10 @@
 # coding=utf-8
+from datetime import datetime
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from json import dumps, loads
 from threading import Lock
-from .models import QueueContainer, Subscription
+from .models import QueueContainer, Subscription, Event
 
 """
 Very simple implementation designed for single server, single process, few users.
@@ -77,15 +79,30 @@ def _remove(queue, sid):
         pass
 
 
-def update_all_subscriptions(event_id):
+def _update_all_subscriptions(event):
     """Oh boy, this will take a while. But it has to be done sometimes."""
-    with _lock, transaction.atomic():
-        qc, created = QueueContainer.objects.get_or_create(event_id=event_id)
-        if created:
-            return
-        queue = loads(qc.data)
-        subscriptions = Subscription.objects.filter(event_id=event_id)
-        subscriptions.exclude(id__in=queue).update(position=None)
-        count = 0
-        for sid in loads(qc.data):
-            count += subscriptions.filter(id=sid).update(position=count)
+    qc, created = QueueContainer.objects.get_or_create(event=event)
+    if created:
+        return
+    queue = loads(qc.data)
+    for sid in list(queue): # iterate over a copy
+        try:
+            s = Subscription.objects.get(id=sid)
+        except ObjectDoesNotExist:
+            _remove(queue, sid)
+        assert isinstance(s, Subscription)
+        if not s.waiting:
+            _remove(queue, sid)
+            s.transaction_set.filter(ended_at__isnull=True).update(ended_at=datetime.now())
+        # TODO: Notify?
+    subscriptions = Subscription.objects.filter(event=event)
+    subscriptions.exclude(id__in=queue).update(position=None)
+    count = 0
+    for sid in loads(qc.data):
+        count += subscriptions.filter(id=sid).update(position=count)
+
+
+def cron():
+    for e in Event.objects.filter(starts_at__gt=datetime.now()).iterable():
+        with _lock, transaction.atomic():
+            _update_all_subscriptions(e)
