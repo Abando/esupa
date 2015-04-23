@@ -1,16 +1,35 @@
-<form method='post' class='formInscricao'>{% csrf_token %}
-{{debug}}
-<table>
-{{subscription_form}}
-<tr>
-	<th></th>
-	<td>
-	<div class='buttons'>
-		{% for k,v in actions %}
-		<div><button name='action' value='{{ k }}'>&nbsp; {{ v }} &nbsp;</button></div>
-		{% endfor %}
-	</div>
-	</td>
-</tr>
-</table>
+<form method='post' class='formInscricao' enctype='multipart/form-data'>
+    {% csrf_token %}
+    {{debug}}
+    <table>
+        {{subscription_form}}
+        {% if documents %}
+        <tr>
+            <th></th>
+            <td>
+                <ul>
+                    {% for doc in documents %}
+                    <li>
+                        <a href="{% url 'esupa-trans-doc' doc.id %}">Enviado {{doc.filled_at}}.</a>
+                        <span class="docOk{{doc.accepted}}">{{doc.ended_at}}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </td>
+        </tr>
+        {% endif %}
+        {{upload_form}}
+        <tr>
+            <th></th>
+            <td>
+                <div class='buttons'>
+                    {% for k,v in actions %}
+                    <div>
+                        <button name='action' value='{{ k }}'>&nbsp; {{ v }} &nbsp;</button>
+                    </div>
+                    {% endfor %}
+                </div>
+            </td>
+        </tr>
+    </table>
 </form>

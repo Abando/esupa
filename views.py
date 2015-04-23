@@ -6,16 +6,16 @@ from django.http import Http404, HttpResponse
 from django.shortcuts import redirect, render
 from django.utils import timezone
 
-from . import payment
-from .forms import SubscriptionForm
-from .models import Event, PmtMethod, Subscription, SubsState, Transaction
+from .forms import SubscriptionForm, UploadForm
+from .models import Event, Subscription, SubsState, Transaction
+from .payment import Deposit, Processor
 from .queue import QueueAgent
 
 
 def get_event() -> Event:
     """Takes first Event set in the future."""
     queryset = Event.objects
-    queryset = queryset.filter(starts_at__gt=timezone.now(), subs_open=True)
+    queryset = queryset.filter(starts_at__gt=timezone.now())
     queryset = queryset.order_by('starts_at')
     return queryset.first()
 
@@ -40,8 +40,8 @@ def index(request):
 
     # redirect away if appropriate
     if action == 'pay_processor' and event.sales_open and queue.within_capacity:
-        processor = payment.Processor(subscription)
-        return redirect(processor.create_transaction())
+        processor = Processor(subscription)
+        return redirect(processor.start_and_go())
     elif state == SubsState.DENIED:
         raise PermissionDenied()
 
@@ -74,17 +74,21 @@ def index(request):
         subscription.save()  # action=save
 
     # deal with payment related stuff
-    context['documents'] = subscription.transaction_set.filter(
-        filled_at__isnull=False).order_by('filled_at').values('id', 'filled_at', 'ended_at', 'accepted')
-    if event.sales_open or subscription.waiting:
-        context['upload'] = subscription.transaction_set.filter(
-            method=PmtMethod.DEPOSIT, ended_at__isnull=True).exists()
+    context['documents'] = subscription.transaction_set.filter(filled_at__isnull=False).values(
+        'id', 'filled_at', 'ended_at', 'accepted')
+    if subscription.id and (event.sales_open or subscription.waiting):
+        deposit = Deposit(subscription)
+        if deposit.expecting_file:
+            context['upload_form'] = UploadForm()
         if action.startswith('pay'):
             subscription.position = queue.add()
-            subscription.waiting = queue.within_capacity
-            if action == 'pay_deposit':
-                deposit = payment.Deposit(subscription)
-                deposit.got_files(request.FILES)
+            if not queue.within_capacity:
+                subscription.waiting = False
+            elif action == 'pay_deposit':
+                if len(request.FILES):
+                    deposit.got_file(request.FILES['upload'])
+                else:
+                    deposit.register_intent()
         if SubsState.ACCEPTABLE <= state < SubsState.VERIFYING_PAY and action != 'edit':
             if queue.within_capacity:
                 buttons.append(('pay_deposit', 'Pagar com depósito bancário'))
@@ -97,7 +101,7 @@ def index(request):
 
 
 @login_required
-def see_transaction_document(request, tid):
+def view_transaction_document(request, tid):
     # TODO: Add ETag generation & verification… maybe… eventually…
     trans = Transaction.objects.get(id=tid)
     if trans is None or not trans.document:

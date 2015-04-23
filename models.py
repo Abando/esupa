@@ -1,5 +1,6 @@
 # coding=utf-8
 from datetime import date, datetime, timedelta
+from decimal import Decimal
 
 from django.contrib.auth.models import User
 from django.db import models
@@ -125,7 +126,7 @@ class Subscription(models.Model):
         return self.badge
 
     @property
-    def waiting(self):
+    def waiting(self) -> bool:
         return False if self.wait_until is None else self.wait_until < datetime.now()
 
     @waiting.setter
@@ -134,6 +135,10 @@ class Subscription(models.Model):
             self.wait_until = None
         elif not self.waiting: # do not reset wait time if it's already running.
             self.wait_until = datetime.now() + timedelta(hours=self.event.payment_wait_hours)
+
+    @property
+    def price(self) -> Decimal:
+        return self.event.price + (self.optionals.aggregate(models.Sum('price'))['price__sum'] or 0)
 
 
 class Opted(models.Model):

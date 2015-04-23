@@ -83,7 +83,7 @@ class SubscriptionForm(forms.Form):
         self.fields['born'].help_text += warning
 
     def copy_into(self, subscription):
-        # FIXME: replace with a smarter loop using self.fields
+        # TODO: replace with a smarter loop using self.fields
         cd = self.cleaned_data
         subscription.full_name      = cd['full_name']
         subscription.document       = cd['document']
@@ -96,7 +96,7 @@ class SubscriptionForm(forms.Form):
         subscription.health_insured = cd['health_insured']
         subscription.contact        = cd['contact']
         subscription.medication     = cd['medication']
-        # subscription.optionals    = cd['optionals'] # um…
+        # subscription.optionals    = cd['optionals'] # FIXME
         subscription.agreed         = cd['agreed']
 
 
@@ -106,3 +106,7 @@ class DisplayWidget(widgets.Widget):
             return escape(value).replace('\n', '<br>')
         else:
             return '-'
+
+
+class UploadForm(forms.Form):
+    upload = forms.FileField(label='Comprovante', help_text='Envie foto ou scan do comprovante de depósito.')
