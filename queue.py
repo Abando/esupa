@@ -4,7 +4,8 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from json import dumps, loads
 from threading import Lock
-from .models import QueueContainer, Subscription, Event
+from esupa.notify import Notificator
+from .models import QueueContainer, Subscription, Event, SubsState
 
 """
 Very simple implementation designed for single server, single process, few users.
@@ -19,6 +20,7 @@ _lock = Lock()  # this could be event specific, but for now let's keep it global
 class QueueAgent:
     """This agent will atomically act upon the event queue on behalf of one subscription. It caches some stuff, so
     don't keep it for long."""
+
     def __init__(self, subscription):
         self.s = subscription
         self.eid = subscription.event_id
@@ -79,30 +81,49 @@ def _remove(queue, sid):
         pass
 
 
-def _update_all_subscriptions(event):
+def _update_all_subscriptions(event, notify):
     """Oh boy, this will take a while. But it has to be done sometimes."""
     qc, created = QueueContainer.objects.get_or_create(event=event)
     if created:
         return
     queue = loads(qc.data)
-    for sid in list(queue): # iterate over a copy
+    position = 0
+    for sid in list(queue):  # iterate over a copy
         try:
-            s = Subscription.objects.get(id=sid)
+            subscription = Subscription.objects.get(id=sid)
         except ObjectDoesNotExist:
             _remove(queue, sid)
-        assert isinstance(s, Subscription)
-        if not s.waiting:
+            subscription.wait_until = None
+            subscription.position = None
+            subscription.save()
+        if subscription.state == SubsState.EXPECTING_PAY and not subscription.waiting:
             _remove(queue, sid)
-            s.transaction_set.filter(ended_at__isnull=True).update(ended_at=datetime.now())
-        # TODO: Notify?
+            subscription.state = SubsState.ACCEPTABLE
+            subscription.wait_until = None
+            subscription.position = None
+            subscription.save()
+            notify.expired(subscription)
+        elif subscription.state == SubsState.QUEUED_FOR_PAY and position < event.capacity:
+            subscription.state = SubsState.EXPECTING_PAY
+            subscription.waiting = True
+            subscription.position = _add(queue, sid)
+            subscription.save()
+            notify.can_pay(subscription)
+            position += 1
+        else:
+            if subscription.position != position:
+                subscription.position = position
+                subscription.save()
+            position += 1
     subscriptions = Subscription.objects.filter(event=event)
     subscriptions.exclude(id__in=queue).update(position=None)
-    count = 0
-    for sid in loads(qc.data):
-        count += subscriptions.filter(id=sid).update(position=count)
+    qc.data = dumps(queue)
+    qc.save()
 
 
 def cron():
-    for e in Event.objects.filter(starts_at__gt=datetime.now()).iterable():
+    for event in Event.objects.filter(starts_at__gt=datetime.now()).iterable():
+        notify = Notificator()
         with _lock, transaction.atomic():
-            _update_all_subscriptions(e)
+            _update_all_subscriptions(event, notify)
+        notify.send_notifications()
