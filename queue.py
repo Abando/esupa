@@ -4,7 +4,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from json import dumps, loads
 from threading import Lock
-from esupa.notify import Notificator
+from esupa.notify import BatchNotifier
 from .models import QueueContainer, Subscription, Event, SubsState
 
 """
@@ -123,7 +123,7 @@ def _update_all_subscriptions(event, notify):
 
 def cron():
     for event in Event.objects.filter(starts_at__gt=datetime.now()).iterable():
-        notify = Notificator()
+        notify = BatchNotifier()
         with _lock, transaction.atomic():
             _update_all_subscriptions(event, notify)
         notify.send_notifications()

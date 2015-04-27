@@ -98,6 +98,10 @@ class Event(models.Model):
         return map(add_count, Subscription.STATES)
 
     @property
+    def openings(self):
+        return self.capacity - self.subscription_set.filter(state__gt=SubsState.ACCEPTABLE).count()
+
+    @property
     def max_born(self):
         if self.min_age:
             return date(self.starts_at.year - self.min_age, self.starts_at.month, self.starts_at.day)
@@ -172,6 +176,7 @@ class Transaction(models.Model):
     value = PriceField()
     created_at = models.DateTimeField(auto_now=True)
     method = PmtMethod.field(default=PmtMethod.CASH)
+    remote_identifier = models.CharField(max_length=50, blank=True)
     document = models.BinaryField(null=True)
     filled_at = models.DateTimeField(null=True, blank=True)
     verifier = models.ForeignKey(User, null=True)

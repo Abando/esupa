@@ -141,5 +141,6 @@ def view_verify(request, slug=None):
     events = Event.objects
     if slug:
         events = events.filter(slug=slug)
-    context = {'events': events}
+    subs = Subscription.objects.filter(state__in=[SubsState.VERIFYING_DATA, SubsState.VERIFYING_PAY])
+    context = {'events': events, 'subscriptions': subs}
     return render(request, 'esupa/verify.html', context)

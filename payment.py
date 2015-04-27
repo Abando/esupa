@@ -40,6 +40,8 @@ class PagSeguroProcessor(Processor):
 
     @staticmethod
     def callback(request):
+        trans = Transaction.objects.get(remote_identifier=request.FIXME.id_trans)
+        #if request.FIXME
         raise NotImplementedError()
 
 

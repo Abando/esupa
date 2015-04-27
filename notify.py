@@ -1,6 +1,10 @@
 # coding=utf-8
 
-class Notificator:
+class Notifier:
+    def __init__(self, subscription):
+        self.s = subscription
+
+class BatchNotifier:
     def __init__(self):
         self._expired = []
         self._can_pay = []
