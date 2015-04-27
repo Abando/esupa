@@ -10,6 +10,7 @@ from django.shortcuts import redirect, render
 
 from .forms import SubscriptionForm, UploadForm
 from .models import Event, Subscription, SubsState, Transaction
+from .notify import Notifier
 from .payment import Deposit, get_processor, processor_callback
 from .queue import QueueAgent, cron
 
@@ -135,12 +136,56 @@ def view_processor(request, slug):
 
 
 @login_required
-def view_verify(request, slug=None):
+def view_verify(request):
     if not request.user.is_staff:
         raise PermissionDenied()
-    events = Event.objects
-    if slug:
-        events = events.filter(slug=slug)
-    subs = Subscription.objects.filter(state__in=[SubsState.VERIFYING_DATA, SubsState.VERIFYING_PAY])
-    context = {'events': events, 'subscriptions': subs}
+    if request.method == 'POST':
+        subs, value = request.POST['action'].split()
+        update_subscription(int(subs), value == 'ok')
+    context = {
+        'VERIFYING_PAY': SubsState.VERIFYING_PAY,
+        'VERIFYING_DATA': SubsState.VERIFYING_DATA,
+        'states': SubsState.choices,
+        'events': Event.objects,
+        'subscriptions': Subscription.objects.filter(state__in=[SubsState.VERIFYING_DATA, SubsState.VERIFYING_PAY]),
+    }
     return render(request, 'esupa/verify.html', context)
+
+
+@login_required
+def view_verify_event(request, eid):
+    if not request.user.is_staff:
+        raise PermissionDenied()
+    event = Event.objects.get(id=eid)
+    return HttpResponse(str(event))
+
+
+def update_subscription(sid, acceptable):
+    subscription = Subscription.objects.get(id=sid)
+    notify = Notifier(subscription)
+    if subscription.state == SubsState.VERIFYING_DATA:
+        if acceptable:
+            subscription.state = SubsState.ACCEPTABLE
+            subscription.save()
+            notify.can_pay()
+        else:
+            subscription.state = SubsState.DENIED
+            subscription.save()
+            notify.data_denied()
+    elif subscription.state == SubsState.VERIFYING_PAY:
+        Deposit(subscription).accept(acceptable)
+        if acceptable:
+            subscription.state = SubsState.CONFIRMED
+            subscription.wait_until = None
+            subscription.save()
+            notify.confirmed()
+        else:
+            subscription.state = SubsState.ACCEPTABLE
+            subscription.wait_until = None
+            subscription.position = None
+            subscription.save()
+            QueueAgent(subscription).remove()
+            notify.pay_denied()
+    else:
+        raise ValueError('Invalid attempt to %s subscription %d (%s)' % (
+            'accept' if acceptable else 'reject', sid, subscription.badge))

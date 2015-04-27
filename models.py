@@ -94,11 +94,19 @@ class Event(models.Model):
 
     def current_subscription_stats(self):
         sfilter = self.subscription_set.filter
-        add_count = lambda tu: tu + (sfilter(state=tu[0]).count(),)
-        return map(add_count, Subscription.STATES)
+        filtered_count = lambda tu: sfilter(state=tu[0]).count()
+        return map(filtered_count, SubsState.choices)
 
     @property
-    def openings(self):
+    def num_confirmed(self):
+        return self.subscription_set.filter(state__gte=SubsState.UNPAID_STAFF).count()
+
+    @property
+    def num_pending(self):
+        return self.subscription_set.filter(state__lt=SubsState.UNPAID_STAFF, state__gt=SubsState.ACCEPTABLE).count()
+
+    @property
+    def num_openings(self):
         return self.capacity - self.subscription_set.filter(state__gt=SubsState.ACCEPTABLE).count()
 
     @property

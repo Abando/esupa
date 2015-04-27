@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>Esupa Verify</title>
+</head>
+<body>
+<table border="1">
+    <tr>
+        <th>Name</th>
+        <th>Starts at</th>
+        <th>Capacity</th>
+        <th>Confirmed</th>
+        <th>Pending</th>
+        <th>Openings</th>
+    </tr>
+    {% for event in events.iterator %}
+    <tr>
+        <th><a href="{% url 'esupa-verify-event' event.id %}">{{event.name}}</a></th>
+        <td>{{event.starts_at}}</td>
+        <td>{{event.capacity}}</td>
+        <td>{{event.num_confirmed}}</td>
+        <td>{{event.num_pending}}</td>
+        <td>{{event.num_openings}}</td>
+    </tr>
+    {% endfor %}
+</table>
+<form method="post">
+    <h2>Subscriptions to verify</h2>
+    <table border="1">
+        {% for s in subscriptions %}
+        <tr>
+            <td>
+                id: {{s.id}}<br/>
+                badge: {{s.badge}}<br/>
+                name: {{s.full_name}}<br/>
+                email: {{s.email}}<br/>
+                document: {{s.document}}<br/>
+                phone: {{s.phone}}<br/>
+                {% if s.state == VERIFYING_DATA %}
+                <button name="action" value="{{s.id}} ok"> Approve!</button>
+                <button name="action" value="{{s.id}} bad"> Deny!</button>
+                {% endif %}
+            </td>
+            <td>
+                <table border="1">
+                    {% for t in s.transaction_set.iterator %}
+                    <td>{{t.id}}</td>
+                    <td>{{t.value}}</td>
+                    <td>[<a href="{% url 'esupa-trans-doc' t.id %}"> image </a>]</td>
+                    {% endfor %}
+                </table>
+                {% if s.state == VERIFYING_PAY %}
+                <button name="action" value="{{s.id}} ok"> Approve!</button>
+                <button name="action" value="{{s.id}} bad"> Deny!</button>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</form>
+</body>
+</html>

@@ -84,3 +84,9 @@ class Deposit:
     def _get_or_create_transaction(self) -> Transaction:
         return self.slot_qs.first() or Transaction(subscription=self.subscription, value=self.subscription.price,
                                                    method=PmtMethod.DEPOSIT)
+
+    def accept(self, acceptable):
+        transaction = self.subscription.transaction_set.get(method=PmtMethod.DEPOSIT, ended_at__isnull=True)
+        transaction.accepted = acceptable
+        transaction.ended_at = datetime.now()
+        transaction.save()
