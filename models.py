@@ -1,9 +1,10 @@
 # coding=utf-8
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 from decimal import Decimal
 
 from django.contrib.auth.models import User
 from django.db import models
+from django.utils.timezone import now
 
 
 PriceField = lambda: models.DecimalField(max_digits=7, decimal_places=2)
@@ -43,11 +44,11 @@ class Enum:
 class PmtMethod(Enum):
     CASH = 0
     DEPOSIT = 1
-    PROCESSOR = 2
+    PAGSEGURO = 2
     choices = (
         (CASH, 'Em Mãos'),
         (DEPOSIT, 'Depósito Bancário'),
-        (PROCESSOR, 'PagSeguro'),
+        (PAGSEGURO, 'PagSeguro'),
     )
 
 
@@ -114,7 +115,7 @@ class Event(models.Model):
         if self.min_age:
             return date(self.starts_at.year - self.min_age, self.starts_at.month, self.starts_at.day)
         else:
-            return date.today()
+            return now().date()
 
 
 class Optional(models.Model):
@@ -141,8 +142,7 @@ class Subscription(models.Model):
     document = models.CharField(max_length=30)
     badge = models.CharField(max_length=30)
     email = models.CharField(max_length=80)
-    area = models.CharField(max_length=2)
-    phone = models.CharField(max_length=9)
+    phone = models.CharField(max_length=20)
     born = models.DateField()
     shirt_size = models.CharField(max_length=4)
     blood = models.CharField(max_length=3)
@@ -164,14 +164,14 @@ class Subscription(models.Model):
 
     @property
     def waiting(self) -> bool:
-        return False if self.wait_until is None else self.wait_until < datetime.now()
+        return False if self.wait_until is None else self.wait_until < now()
 
     @waiting.setter
     def waiting(self, value):
         if not value:
             self.wait_until = None
         elif not self.waiting:  # only reset wait time if it's not running.
-            self.wait_until = datetime.now() + timedelta(hours=self.event.payment_wait_hours)
+            self.wait_until = now() + timedelta(hours=self.event.payment_wait_hours)
 
     @property
     def price(self) -> Decimal:

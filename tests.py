@@ -1,14 +1,18 @@
 # coding=utf-8
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
+from logging import getLogger
 
 from django.test import TestCase
+from django.utils.timezone import now
 
 from .models import Event, Optional
+
+logger = getLogger(__name__)
 
 
 class BasicModelVerification(TestCase):
     def setUp(self):
-        self.now = datetime.now()
+        self.now = now()
 
         self.e1 = Event.objects.create(name="Summer Sun Celebration",
                                        starts_at=date(2010, 10, 10),

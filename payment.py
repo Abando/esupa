@@ -1,12 +1,14 @@
 # coding=utf-8
-from datetime import datetime
+from logging import getLogger
 
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from django.http import HttpResponse
+from django.utils.timezone import now
 
 from .models import PmtMethod, Subscription, Transaction
 
+logger = getLogger(__name__)
 
 # TODO: this should be some decent dependency injection instead
 if hasattr(settings, 'PAGSEGURO_EMAIL'):
@@ -26,8 +28,8 @@ class Processor:
         if not subscription.id:
             raise PermissionDenied('Payment without subscription.')
         tset = subscription.transaction_set
-        transaction = tset.filter(method=PmtMethod.PROCESSOR, filled_at__isnull=True).first() or \
-            tset.create(subscription=subscription, value=subscription.price, method=PmtMethod.PROCESSOR)
+        transaction = tset.filter(method=PmtMethod.PAGSEGURO, filled_at__isnull=True).first() or \
+                      tset.create(subscription=subscription, value=subscription.price, method=PmtMethod.PAGSEGURO)
         # Add support for other processors here.
         return PagSeguroProcessor(transaction)
 
@@ -56,7 +58,7 @@ class Deposit:
     def got_file(self, data):
         transaction = self._get_or_create_transaction()
         transaction.document = data
-        transaction.filled_at = datetime.now()
+        transaction.filled_at = now()
         transaction.save()
 
     def register_intent(self):
@@ -71,7 +73,7 @@ class Deposit:
     def accept(self, acceptable):
         transaction = self.subscription.transaction_set.get(method=PmtMethod.DEPOSIT, ended_at__isnull=True)
         transaction.accepted = acceptable
-        transaction.ended_at = datetime.now()
+        transaction.ended_at = now()
         transaction.save()
 
 

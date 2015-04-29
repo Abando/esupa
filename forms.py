@@ -1,18 +1,35 @@
 # coding=utf-8
+from logging import getLogger
+
 from django import forms
 from django.core.exceptions import ValidationError
 from django.forms import widgets
 from django.utils import formats
-from django.utils.html import escape
+
+from .models import Subscription, Optional
+
+logger = getLogger(__name__)
 
 
-class SubscriptionForm(forms.Form):
+class ModelPricedOptInField(forms.ModelMultipleChoiceField):
+    widget = forms.CheckboxSelectMultiple
+
+    def __init__(self, **kwargs):
+        forms.ModelMultipleChoiceField.__init__(self, None, **kwargs)
+
+    def label_from_instance(self, obj):
+        assert isinstance(obj, Optional)
+        return '%s (R$ %s)' % (obj.name, obj.price)
+
+
+class SubscriptionForm(forms.ModelForm):
     full_name = forms.CharField(
         label='Nome completo',
         help_text='Conforme documentação legal.')
     document = forms.CharField(
         label='Registro geral (RG)',
-        help_text='Informe número e órgão expeditor. Caso não tenha RG, coloque o número de outro documento, como CNH ou Passaporte.')
+        help_text='Informe número e órgão expeditor. '
+                  'Caso não tenha RG, coloque o número de outro documento, como CNH ou Passaporte.')
     badge = forms.CharField(
         label='Crachá',
         help_text='O nome que será impresso no seu crachá (badge).')
@@ -44,27 +61,29 @@ class SubscriptionForm(forms.Form):
         label='Informações médicas rotineiras e de emergência',
         required=False,
         widget=widgets.Textarea,
-        help_text='Medicação sendo tomada, medicação para crises, pressão alta, diabetes, problemas respiratórios, do coração, alergias (alimentares e medicamentosas), qualquer problema ou condição que necessite de cuidado especial.')
-    optionals = forms.ModelMultipleChoiceField(
-        label='',
-        required=False,
-        queryset=None,
-        widget=widgets.CheckboxSelectMultiple)
-    agreed = forms.BooleanField(
-        label='Concordo em seguir o código de conduta.')
+        help_text='Medicação sendo tomada, medicação para crises, pressão alta, diabetes, '
+                  'problemas respiratórios, do coração, alergias (alimentares e medicamentosas), '
+                  'qualquer problema ou condição que necessite de cuidado especial.')
+    optionals = ModelPricedOptInField(label='Opcional', required=False)
+    agreed = forms.BooleanField(label='Concordo em seguir o código de conduta.')
 
-    def __init__(self, subscription, *args, **kwargs):
+    class Meta:
+        model = Subscription
+        exclude = 'event user state wait_until position paid paid_at'.split()
+
+    def __init__(self, *args, **kwargs):
+        forms.ModelForm.__init__(self, *args, **kwargs)
+        subscription = self.instance
         event = subscription.event
-        forms.Form.__init__(self, *args, **kwargs)
         self.fields['optionals'].queryset = event.optional_set
-        self._add_age_warning(subscription.event)
+        self._add_age_warning(event)
         self.max_born = event.max_born
 
     def clean_born(self):
         born = self.cleaned_data['born']
         if born > self.max_born:
             raise ValidationError(
-                'Somente nascidos antes de %(date)s.',
+                'Somente nascidos até %(date)s.',
                 code='too_young',
                 params={'date': self.max_born},
             )
@@ -82,34 +101,21 @@ class SubscriptionForm(forms.Form):
         warning = ' Você deverá ter %d anos ou mais no dia %s.' % (event.min_age, when)
         self.fields['born'].help_text += warning
 
-    def copy_into(self, subscription):
-        # TODO: replace with a smarter loop using self.fields
-        cd = self.cleaned_data
-        subscription.full_name      = cd['full_name']
-        subscription.document       = cd['document']
-        subscription.badge          = cd['badge']
-        subscription.email          = cd['email']
-        subscription.phone          = cd['phone']
-        subscription.born           = cd['born']
-        subscription.shirt_size     = cd['shirt_size']
-        subscription.blood          = cd['blood']
-        subscription.health_insured = cd['health_insured']
-        subscription.contact        = cd['contact']
-        subscription.medication     = cd['medication']
-        # subscription.optionals    = cd['optionals'] # FIXME
-        subscription.agreed         = cd['agreed']
-
 
 class DisplayWidget(widgets.Widget):
     def render(self, name, value, attrs=None):
-        if value:
-            return escape(value).replace('\n', '<br>')
-        else:
+        if not value:
             return '-'
+        elif name == 'optionals':
+            optionals = Optional.objects.filter(id__in=value).all()
+            return ''.join(map(lambda o: '<div>%s</div>' % o.name, optionals))
+        else:
+            return value
 
 
 class UploadForm(forms.Form):
     upload = forms.FileField(label='Comprovante')
+
     def __init__(self, subscription, *args, **kwargs):
         forms.Form.__init__(self, *args, **kwargs)
         fmt = 'Deposite R$ %s na conta abaixo e envie foto ou scan do comprovante.\n%s'

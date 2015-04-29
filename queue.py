@@ -1,11 +1,14 @@
 # coding=utf-8
-from datetime import datetime
+from json import dumps, loads
+from logging import getLogger
+from threading import Lock
+
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
-from json import dumps, loads
-from threading import Lock
-from esupa.notify import BatchNotifier
-from .models import QueueContainer, Subscription, Event, SubsState
+from django.utils.timezone import now
+
+from .notify import BatchNotifier
+from .models import Event, QueueContainer, Subscription, SubsState
 
 """
 Very simple implementation designed for single server, single process, few users.
@@ -13,6 +16,8 @@ Very simple implementation designed for single server, single process, few users
 May scalability ever become an issue, replace this with something like Celery and
 RabbitMQ. Let's not reinvent the wheel too much, shall we?
 """
+
+logger = getLogger(__name__)
 
 _lock = Lock()  # this could be event specific, but for now let's keep it global
 
@@ -122,7 +127,7 @@ def _update_all_subscriptions(event, notify):
 
 
 def cron():
-    for event in Event.objects.filter(starts_at__gt=datetime.now()).iterable():
+    for event in Event.objects.filter(starts_at__gt=now()).iterable():
         notify = BatchNotifier()
         with _lock, transaction.atomic():
             _update_all_subscriptions(event, notify)
