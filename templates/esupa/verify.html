@@ -25,7 +25,7 @@
     </tr>
     {% endfor %}
 </table>
-<form method="post">
+<form method="post">{% csrf_token %}
     <h2>Subscriptions to verify</h2>
     <table border="1">
         {% for s in subscriptions %}

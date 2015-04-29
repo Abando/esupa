@@ -1,61 +1,44 @@
 # coding=utf-8
 from datetime import datetime
 
+from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from django.http import HttpResponse
 
-from esupa.models import PmtMethod, Subscription, Transaction
+from .models import PmtMethod, Subscription, Transaction
+
+
+# TODO: this should be some decent dependency injection instead
+if hasattr(settings, 'PAGSEGURO_EMAIL'):
+    from .processors.pagseguro import PagSeguroProcessor
+else:
+    PagSeguroProcessor = None
 
 
 class Processor:
-    def __init__(self, subscription):
-        self.s = subscription
-        self._cart = None
+    @classmethod
+    def static_init(cls):
+        if PagSeguroProcessor:
+            PagSeguroProcessor.static_init()
 
-    @property
-    def cart(self):
-        if self._cart is None:
-            self._cart = [CartItem(self.s.event)]
-            self._cart.extend(map(CartItem, self.s.optionals.iterable()))
-        return self._cart
+    @classmethod
+    def get(cls, subscription):
+        if not subscription.id:
+            raise PermissionDenied('Payment without subscription.')
+        tset = subscription.transaction_set
+        transaction = tset.filter(method=PmtMethod.PROCESSOR, filled_at__isnull=True).first() or \
+            tset.create(subscription=subscription, value=subscription.price, method=PmtMethod.PROCESSOR)
+        # Add support for other processors here.
+        return PagSeguroProcessor(transaction)
 
-    def generate_processor_url(self) -> str:
+    @classmethod
+    def view(cls, slug, request):
+        if slug == 'pagseguro':
+            return PagSeguroProcessor.view(request)
+        return HttpResponse(status=400)  # Bad Request
+
+    def generate_transaction_url(self):
         raise NotImplementedError()
-
-
-class CartItem:
-    def __init__(self, other):
-        # We expect Event and Optional here. Python's duck typing ahoy!
-        self.id = other.id
-        self.name = other.name
-        self.price = other.price
-
-
-class PagSeguroProcessor(Processor):
-    def __init__(self, subscription):
-        Processor.__init__(subscription)
-
-    def generate_processor_url(self) -> str:
-        pass
-
-    @staticmethod
-    def callback(request):
-        trans = Transaction.objects.get(remote_identifier=request.FIXME.id_trans)
-        #if request.FIXME
-        raise NotImplementedError()
-
-
-def get_processor(subscription) -> PagSeguroProcessor:
-    if not subscription.id:
-        raise PermissionDenied('Payment without subscription.')
-    # Add support for other processors here.
-    return PagSeguroProcessor(subscription)
-
-
-def processor_callback(slug, request):
-    if slug == 'pagseguro':
-        return PagSeguroProcessor.callback(request)
-    return HttpResponse(status=400)  # Bad Request
 
 
 class Deposit:
@@ -90,3 +73,6 @@ class Deposit:
         transaction.accepted = acceptable
         transaction.ended_at = datetime.now()
         transaction.save()
+
+
+Processor.static_init()

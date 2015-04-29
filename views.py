@@ -3,15 +3,15 @@ from datetime import datetime
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist
 from django.forms.models import model_to_dict
-from django.http import Http404, HttpResponse
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseNotFound, HttpResponseForbidden, Http404
 from django.shortcuts import redirect, render
 
 from .forms import SubscriptionForm, UploadForm
 from .models import Event, Subscription, SubsState, Transaction
 from .notify import Notifier
-from .payment import Deposit, get_processor, processor_callback
+from .payment import Deposit, Processor
 from .queue import QueueAgent, cron
 
 
@@ -50,10 +50,9 @@ def view_subscribe(request, eslug=None):
 
     # redirect away if appropriate
     if action == 'pay_processor' and event.sales_open and queue.within_capacity:
-        processor = get_processor(subscription)
-        return redirect(processor.generate_processor_url())
+        return redirect(Processor.get(subscription).generate_transaction_url())
     elif state == SubsState.DENIED:
-        raise PermissionDenied()
+        return HttpResponseForbidden()
 
     # display subscription information no matter what
     if request.method == 'POST' and action == 'save':
@@ -118,30 +117,58 @@ def view_transaction_document(request, tid):
     # TODO: Add ETag generation & verification… maybe… eventually…
     trans = Transaction.objects.get(id=tid)
     if trans is None or not trans.document:
-        raise Http404()
+        return HttpResponseNotFound()
     if not request.user.is_staff and trans.subscription.user != request.user:
-        raise PermissionDenied()
+        return HttpResponseForbidden()
     response = HttpResponse(trans.document, mimetype='image')
     return response
 
 
 def view_cron(_, secret):
     if secret != settings.ESUPA_CRON_SECRET:
-        raise PermissionDenied()
+        return HttpResponseBadRequest()
     cron()
 
 
 def view_processor(request, slug):
-    return processor_callback(slug, request)
+    return Processor.view(slug, request)
 
 
 @login_required
 def view_verify(request):
     if not request.user.is_staff:
-        raise PermissionDenied()
+        return HttpResponseForbidden()
     if request.method == 'POST':
-        subs, value = request.POST['action'].split()
-        update_subscription(int(subs), value == 'ok')
+        sid, acceptable = request.POST['action'].split()
+        acceptable = acceptable == 'ok'
+        subscription = Subscription.objects.get(id=int(sid))
+        notify = Notifier(subscription)
+        if subscription.state == SubsState.VERIFYING_DATA:
+            if acceptable:
+                subscription.state = SubsState.ACCEPTABLE
+                subscription.save()
+                notify.can_pay()
+            else:
+                subscription.state = SubsState.DENIED
+                subscription.save()
+                notify.data_denied()
+        elif subscription.state == SubsState.VERIFYING_PAY:
+            Deposit(subscription).accept(acceptable)
+            if acceptable:
+                subscription.state = SubsState.CONFIRMED
+                subscription.wait_until = None
+                subscription.save()
+                notify.confirmed()
+            else:
+                subscription.state = SubsState.ACCEPTABLE
+                subscription.wait_until = None
+                subscription.position = None
+                subscription.save()
+                QueueAgent(subscription).remove()
+                notify.pay_denied()
+        else:
+            return HttpResponseBadRequest('Invalid attempt to %s subscription %d (%s)' % (
+                'accept' if acceptable else 'reject', sid, subscription.badge))
     context = {
         'VERIFYING_PAY': SubsState.VERIFYING_PAY,
         'VERIFYING_DATA': SubsState.VERIFYING_DATA,
@@ -155,37 +182,6 @@ def view_verify(request):
 @login_required
 def view_verify_event(request, eid):
     if not request.user.is_staff:
-        raise PermissionDenied()
+        return HttpResponseForbidden()
     event = Event.objects.get(id=eid)
     return HttpResponse(str(event))
-
-
-def update_subscription(sid, acceptable):
-    subscription = Subscription.objects.get(id=sid)
-    notify = Notifier(subscription)
-    if subscription.state == SubsState.VERIFYING_DATA:
-        if acceptable:
-            subscription.state = SubsState.ACCEPTABLE
-            subscription.save()
-            notify.can_pay()
-        else:
-            subscription.state = SubsState.DENIED
-            subscription.save()
-            notify.data_denied()
-    elif subscription.state == SubsState.VERIFYING_PAY:
-        Deposit(subscription).accept(acceptable)
-        if acceptable:
-            subscription.state = SubsState.CONFIRMED
-            subscription.wait_until = None
-            subscription.save()
-            notify.confirmed()
-        else:
-            subscription.state = SubsState.ACCEPTABLE
-            subscription.wait_until = None
-            subscription.position = None
-            subscription.save()
-            QueueAgent(subscription).remove()
-            notify.pay_denied()
-    else:
-        raise ValueError('Invalid attempt to %s subscription %d (%s)' % (
-            'accept' if acceptable else 'reject', sid, subscription.badge))
