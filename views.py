@@ -80,6 +80,8 @@ def view_subscribe(request, eslug=None):
         acceptable = True not in (t in d for d in s for t in b)
         subscription.state = SubsState.ACCEPTABLE if acceptable else SubsState.VERIFYING_DATA
         subscription.save()  # action=save
+        if not acceptable:
+            Notifier(subscription).staffer_action_required()
 
     # deal with payment related stuff
     context['documents'] = subscription.transaction_set.filter(filled_at__isnull=False).values(
@@ -93,6 +95,7 @@ def view_subscribe(request, eslug=None):
             if len(request.FILES):
                 deposit.got_file(request.FILES['upload'])
                 subscription.raise_state(SubsState.VERIFYING_PAY)
+                Notifier(subscription).staffer_action_required()
             elif action == 'pay_deposit':
                 deposit.register_intent()
             subscription.save()  # action=pay

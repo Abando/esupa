@@ -24,6 +24,10 @@ class Notifier:
         """Pay has been denied."""
         raise NotImplementedError()
 
+    def staffer_action_required(self):
+        """Sent to staffers, telling them that they're supposed to verify some data."""
+        raise NotImplementedError()
+
 
 class BatchNotifier:
     def __init__(self):
