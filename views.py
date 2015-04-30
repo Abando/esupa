@@ -130,7 +130,7 @@ def view_cron(_, secret):
 
 
 def view_processor(request, slug):
-    return Processor.view(slug, request)
+    return Processor.dispatch_view( slug, request)
 
 
 @login_required

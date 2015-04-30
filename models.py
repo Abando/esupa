@@ -161,6 +161,9 @@ class Subscription(models.Model):
     def raise_state(self, state):
         if self.state < state:
             self.state = state
+            return True
+        else:
+            return False
 
     @property
     def waiting(self) -> bool:
@@ -191,3 +194,14 @@ class Transaction(models.Model):
     accepted = models.BooleanField(default=False)
     notes = models.TextField(blank=True)
     ended_at = models.DateTimeField(null=True, blank=True)
+
+    @property
+    def ended(self) -> bool:
+        return bool(self.ended_at)
+
+    @ended.setter
+    def ended(self, value):
+        if value and not self.ended_at:
+            self.ended_at = now()
+        elif self.ended_at and not value:
+            self.ended_at = None

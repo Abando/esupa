@@ -7,8 +7,10 @@ from pagseguro.api import PagSeguroApi, PagSeguroItem
 from pagseguro.models import Transaction as PagSeguroTransaction
 from pagseguro.signals import notificacao_recebida
 
-from ..models import Transaction as EsupaTransaction
+from ..models import SubsState, Transaction
+from ..notify import Notifier
 from ..payment import Processor
+from ..queue import QueueAgent
 
 logger = getLogger(__name__)
 
@@ -28,11 +30,11 @@ class PagSeguroProcessor(Processor):
         assert isinstance(transaction, PagSeguroTransaction)
         assert isinstance(sender, PagSeguroApi)
         tid = int(transaction.reference)
-        esupa_transaction = EsupaTransaction.objects.get(id=tid)
+        esupa_transaction = Transaction.objects.get(id=tid)
         PagSeguroProcessor(esupa_transaction).handle_notification(transaction)
 
     def __init__(self, transaction):
-        assert isinstance(transaction, EsupaTransaction)
+        assert isinstance(transaction, Transaction)
         self.t = transaction
 
     def generate_transaction_url(self) -> str:
@@ -51,7 +53,57 @@ class PagSeguroProcessor(Processor):
             raise ValueError()  # TODO: signal this error some better way
 
     def handle_notification(self, pagseguro):
-        assert isinstance(pagseguro, PagSeguroTransaction)
-        self.t.remote_identifier = pagseguro.code
-        self.t.notes += '\n\n[%s] %s %s\n%s' % (pagseguro.last_event_date, pagseguro.code,
-                                                pagseguro.status, pagseguro.content)
+        subscription = self.t.subcription
+        try:
+            assert isinstance(pagseguro, PagSeguroTransaction)
+            self.t.remote_identifier = pagseguro.code
+            self.t.notes += '\n\n[%s] %s %s\n%s' % (pagseguro.last_event_date, pagseguro.code,
+                                                    pagseguro.status, pagseguro.content)
+            queue = QueueAgent(subscription)
+            notify = Notifier(subscription)
+            # pagseguro.models.TRANSACTION_STATUS_CHOICES:
+            # aguardando, em_analise, pago, disponivel, em_disputa, devolvido, cancelado
+            if pagseguro.status in ['aguardando', 'em_analise']:
+                # This bit of logic is not strictly needed. I'm just making sure data is still sane.
+                # 'em_analise' means PagSeguro is verifying pay, not esupa staff users, so we just keep waiting.
+                subscription.raise_state(SubsState.EXPECTING_PAY)
+                self.t.ended = False
+                subscription.position = queue.add()
+                subscription.waiting = False  # reset wait
+                subscription.waiting = True
+            elif pagseguro.status in ['pago', 'disponivel']:
+                # Escrow starts at 'pago' and ends at 'disponivel'. We'll assume that it will always complete
+                # sucessfully because we're optimistic like that. See the dispute section.
+                subscription.raise_state(SubsState.CONFIRMED)
+                self.t.ended = True
+                self.t.accepted = True
+                subscription.position = queue.add()
+                subscription.waiting = False
+                notify.confirmed()
+            elif pagseguro.status in ['em_disputa']:
+                # The payment is being disputed. We'll deal with this conservatively, putting the subscriber back into
+                # the queue. I have no idea if this is the best approcach, because we've used PagSeguro for 7 years and
+                # we haven't even once got a dispute.
+                self.t.ended = False
+                self.t.accepted = False
+                subscription.state = SubsState.EXPECTING_PAY
+                subscription.waiting = True
+                # queue.remove(); subscription.position = queue.add()  # unsure if necessary
+            elif pagseguro.status in ['devolvido', 'cancelado']:
+                # We have to be careful here wether we have other pending transactions. So we'll first close this
+                # transaction, then peek other transactions before making any changes to the subscription.
+                self.t.ended = True
+                self.t.accepted = False
+                self.t.save()  # so that we won't get this transaction over again
+                if not subscription.transaction_set.filter(ended_at__isnull=True).exists():
+                    queue.remove()
+                    subscription.state = SubsState.ACCEPTABLE
+                    subscription.position = None
+                    subscription.waiting = False
+                    notify.pay_denied()
+            else:
+                raise ValueError('Unknown PagSeguro status code: %s' % pagseguro.status)
+        finally:
+            # No rollbacks please!
+            self.t.save()
+            subscription.save()

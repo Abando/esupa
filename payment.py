@@ -3,7 +3,7 @@ from logging import getLogger
 
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
-from django.http import HttpResponse
+from django.http import HttpResponseBadRequest
 from django.utils.timezone import now
 
 from .models import PmtMethod, Subscription, Transaction
@@ -29,15 +29,16 @@ class Processor:
             raise PermissionDenied('Payment without subscription.')
         tset = subscription.transaction_set
         transaction = tset.filter(method=PmtMethod.PAGSEGURO, filled_at__isnull=True).first() or \
-                      tset.create(subscription=subscription, value=subscription.price, method=PmtMethod.PAGSEGURO)
+            tset.create(subscription=subscription, value=subscription.price, method=PmtMethod.PAGSEGURO)
         # Add support for other processors here.
         return PagSeguroProcessor(transaction)
 
-    @classmethod
-    def view(cls, slug, request):
+    @staticmethod
+    def dispatch_view(slug, request):
         if slug == 'pagseguro':
             return PagSeguroProcessor.view(request)
-        return HttpResponse(status=400)  # Bad Request
+        else:
+            return HttpResponseBadRequest()
 
     def generate_transaction_url(self):
         raise NotImplementedError()
