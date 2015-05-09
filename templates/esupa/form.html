@@ -1,13 +1,10 @@
+<html><body>
 <form method='post' class='formInscricao' enctype='multipart/form-data'>
     {% csrf_token %}
     {{debug}}
-    <table>
-        {{subscription_form}}
+        {{subscription_form.as_p}}
         {% if documents %}
-        <tr>
-            <th></th>
-            <td>
-                <ul>
+                <ul class='esupa-documents'>
                     {% for doc in documents %}
                     <li>
                         <a href="{% url 'esupa-trans-doc' doc.id %}">Enviado {{doc.filled_at}}.</a>
@@ -15,21 +12,14 @@
                     </li>
                     {% endfor %}
                 </ul>
-            </td>
-        </tr>
         {% endif %}
-        {{upload_form}}
-        <tr>
-            <th></th>
-            <td>
-                <div class='buttons'>
+        {{upload_form.as_p}}
+                <p class='buttons'>
                     {% for k,v in actions %}
                     <div>
                         <button name='action' value='{{ k }}'>&nbsp; {{ v }} &nbsp;</button>
                     </div>
                     {% endfor %}
-                </div>
-            </td>
-        </tr>
-    </table>
+                </p>
 </form>
+</body></html>
