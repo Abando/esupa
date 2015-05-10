@@ -1,7 +1,7 @@
 # coding=utf-8
 from logging import getLogger
 
-# pip install django-pagseguro2
+# sudo -H pip3 install django-pagseguro2
 import pagseguro.models  # possible name clashes
 from pagseguro import views
 from pagseguro.api import PagSeguroApi, PagSeguroItem

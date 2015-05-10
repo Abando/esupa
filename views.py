@@ -43,7 +43,7 @@ def get_subscription(event, user) -> Subscription:
 
 
 @login_required
-def view_subscribe(request, eslug=None):
+def view_subscribe(request, eslug=None) -> HttpResponse:
     event = get_event(eslug)
     subscription = get_subscription(event, request.user)
     action = request.POST.get('action', default='view')
@@ -115,7 +115,7 @@ def view_subscribe(request, eslug=None):
 
 
 @login_required
-def view_transaction_document(request, tid):
+def view_transaction_document(request, tid) -> HttpResponse:
     # Add ETag generation & verification… maybe… eventually…
     trans = Transaction.objects.get(id=tid)
     if trans is None or not trans.document:
@@ -126,18 +126,19 @@ def view_transaction_document(request, tid):
     return response
 
 
-def view_cron(_, secret):
+def view_cron(_, secret) -> HttpResponse:
     if secret != settings.ESUPA_CRON_SECRET:
         return HttpResponseBadRequest()
     cron()
+    return HttpResponse()  # no response
 
 
-def view_processor(request, slug):
-    return Processor.dispatch_view( slug, request)
+def view_processor(request, slug) -> HttpResponse:
+    return Processor.dispatch_view(slug, request)
 
 
 @login_required
-def view_verify(request):
+def view_verify(request) -> HttpResponse:
     if not request.user.is_staff:
         return HttpResponseForbidden()
     if request.method == 'POST':
@@ -182,7 +183,7 @@ def view_verify(request):
 
 
 @login_required
-def view_verify_event(request, eid):
+def view_verify_event(request, eid) -> HttpResponse:
     if not request.user.is_staff:
         return HttpResponseForbidden()
     event = Event.objects.get(id=eid)
