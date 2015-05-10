@@ -1,25 +1,55 @@
-<html><body>
+<!doctype html>
+<html class="no-js" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Abando | Inscrição e Pagamento</title>
+    {% load staticfiles %}
+    <link rel="stylesheet" href="{% static 'esupa/css/foundation.min.css' %}"/>
+    <link rel="stylesheet" href="{% static 'esupa/css/main.css' %}"/>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/modernizr/2.8.3/modernizr.min.js"></script>
+</head>
+<body>
+<header>
+    <div class="row">
+        <div class="large-2 columns">
+            <img src="{% static 'esupa/img/abando.png' %}"/>
+        </div>
+        <div class="large-10 columns">
+            <h1>Abando 2016</h1>
+        </div>
+    </div>
+</header>
 <form method='post' class='formInscricao' enctype='multipart/form-data'>
     {% csrf_token %}
-    {{debug}}
-        {{subscription_form.as_p}}
-        {% if documents %}
-                <ul class='esupa-documents'>
-                    {% for doc in documents %}
-                    <li>
-                        <a href="{% url 'esupa-trans-doc' doc.id %}">Enviado {{doc.filled_at}}.</a>
-                        <span class="docOk{{doc.accepted}}">{{doc.ended_at}}</span>
-                    </li>
-                    {% endfor %}
-                </ul>
-        {% endif %}
-        {{upload_form.as_p}}
-                <p class='buttons'>
-                    {% for k,v in actions %}
-                    <div>
-                        <button name='action' value='{{ k }}'>&nbsp; {{ v }} &nbsp;</button>
-                    </div>
-                    {% endfor %}
-                </p>
+    <div class="row">
+        <div class="large-12 columns">
+            {{debug}}
+            {{subscription_form.as_p}}
+            {% if documents %}
+            <ul class='esupa-documents'>
+                {% for doc in documents %}
+                <li>
+                    <a href="{% url 'esupa-trans-doc' doc.id %}">Enviado {{doc.filled_at}}.</a>
+                    <span class="docOk{{doc.accepted}}">{{doc.ended_at}}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+            {{upload_form.as_p}}
+            <p class='buttons'>
+                {% for k,v in actions %}
+                <button name='action' value='{{ k }}'>&nbsp; {{ v }} &nbsp;</button>
+                {% endfor %}
+            </p>
+        </div>
+    </div>
 </form>
-</body></html>
+<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+<script src="{% static 'esupa/js/foundation.min.js' %}"></script>
+<script>
+      $(document).foundation();
+	  $('label[for=id_optionals_0]').parent().css("margin-bottom", "12px");
+</script>
+</body>
+</html>

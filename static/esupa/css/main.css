@@ -1,0 +1,38 @@
+.helptext{
+	background: #ddd;
+	padding: 4px;
+	font-size: 0.6em;
+	float: right;
+	margin-top: -16px;
+}
+#id_optionals, .errorlist{
+	list-style: none;
+}
+.errorlist{
+	position: absolute;
+	padding: 4px;
+	margin: -3px 15px 0 0;
+	font-size: 0.6em;
+	background-color: red;
+	color: #fff;
+	right: 0;
+}
+#id_agreed{
+	display: inline-block;
+	float: left;
+	margin: 7px;
+}
+label[for=id_agreed]{
+	display: inline-block;
+}
+label[for=id_optionals_0]{
+	font-size:1.5em;
+}
+header{
+	background-color: #6729a7;
+	padding:20px 0 20px 0;
+	margin-bottom: 3rem;
+}
+header img{width:100%}
+header h1{color:#fff}
+p{margin-bottom: 2.5rem;}
