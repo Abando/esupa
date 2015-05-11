@@ -122,7 +122,7 @@ def view_transaction_document(request, tid) -> HttpResponse:
         return HttpResponseNotFound()
     if not request.user.is_staff and trans.subscription.user != request.user:
         return HttpResponseForbidden()
-    response = HttpResponse(trans.document, mimetype='image')
+    response = HttpResponse(trans.document, content_type='image')
     return response
 
 

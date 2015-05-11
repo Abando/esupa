@@ -52,7 +52,7 @@ class Notifier:
         """Sent to staffers, telling them that they're supposed to verify some data."""
         subject = '[%s] verificar: %s' % (self.s.event.name, self.s.badge)
         body = 'Verificar inscrição #%d (%s): %s' % (
-            self.s.id, self.s.badge, reverse('esupa-verify-subscription', args=[self.s.id]))
+            self.s.id, self.s.badge, reverse('esupa-verify-event', args=[self.s.event.id]))
         recipients = User.objects.filter(is_staff=True).all()
         send_mail(subject, body, Notifier.sender, recipients, fail_silently=True)
         logger.debug('Notified staff about %d=%s, state %s', self.s.id, self.s.badge, self.s.state)

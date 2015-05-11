@@ -56,9 +56,9 @@ class Deposit:
     def expecting_file(self):
         return self.slot_qs.exists()
 
-    def got_file(self, data):
+    def got_file(self, file):
         transaction = self._get_or_create_transaction()
-        transaction.document = data
+        transaction.document = file.read()
         transaction.filled_at = now()
         transaction.save()
 
