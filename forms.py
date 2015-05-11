@@ -109,6 +109,8 @@ class DisplayWidget(widgets.Widget):
         elif name == 'optionals':
             optionals = Optional.objects.filter(id__in=value).all()
             return ''.join(map(lambda o: '<div>%s</div>' % o.name, optionals))
+        elif name in ('health_insured', 'agreed'):
+            return 'Sim' if value else 'Não'
         else:
             return value
 
