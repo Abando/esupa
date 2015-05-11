@@ -65,12 +65,12 @@ def view_subscribe(request, eslug=None) -> HttpResponse:
     context = {'subscription_form': form, 'actions': buttons}
     if not event.subs_open:
         form.freeze()
-    elif not form.errors and action != 'edit':
+    elif (action == 'view' and not subscription.id) or (action == 'edit') or (action == 'save' and form.errors):
+        buttons.append(('save', 'Salvar'))
+    else:
         form.freeze()
         if SubsState.NEW <= state <= SubsState.QUEUED_FOR_PAY:
             buttons.append(('edit', 'Editar'))
-    else:
-        buttons.append(('save', 'Salvar'))
 
     # perform appropriate saves if applicable
     if action == 'save' and form.is_valid() and SubsState.NEW <= state <= SubsState.QUEUED_FOR_PAY:
