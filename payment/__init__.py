@@ -6,7 +6,7 @@ from django.core.exceptions import PermissionDenied
 from django.http import HttpResponseBadRequest
 from django.utils.timezone import now
 
-from .models import PmtMethod, Subscription, Transaction
+from ..models import PmtMethod, Subscription, Transaction
 
 logger = getLogger(__name__)
 
@@ -20,7 +20,7 @@ class Processor:
     def static_init(cls):
         if not cls._initialized:
             if hasattr(settings, 'PAGSEGURO_EMAIL'):
-                from .processors.pagseguro import PagSeguroProcessor
+                from .pagseguro import PagSeguroProcessor
 
                 PagSeguroProcessor.static_init()
                 cls._processors[PagSeguroProcessor.slug] = PagSeguroProcessor

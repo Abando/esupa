@@ -7,9 +7,9 @@ from pagseguro import views
 from pagseguro.api import PagSeguroApi, PagSeguroItem
 from pagseguro.signals import notificacao_recebida
 
+from . import Processor
 from ..models import SubsState, Transaction
 from ..notify import Notifier
-from ..payment import Processor
 from ..queue import QueueAgent
 
 logger = getLogger(__name__)
