@@ -12,7 +12,7 @@ from ..models import SubsState, Transaction
 from ..notify import Notifier
 from ..queue import QueueAgent
 
-logger = getLogger(__name__)
+log = getLogger(__name__)
 
 
 class PagSeguroProcessor(Processor):
@@ -51,7 +51,7 @@ class PagSeguroProcessor(Processor):
         if data['success']:
             return data['redirect_url']
         else:
-            logger.error('Data returned error. %s', repr(data))
+            log.error('Data returned error. %s', repr(data))
             raise ValueError()  # TODO: signal this error some better way
 
     def handle_notification(self, data):

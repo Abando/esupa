@@ -7,7 +7,7 @@ from django.utils.timezone import now
 
 from .models import Event, Optional
 
-logger = getLogger(__name__)
+log = getLogger(__name__)
 
 
 class BasicModelVerification(TestCase):

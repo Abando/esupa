@@ -6,7 +6,7 @@ from django.utils.timezone import now
 
 from ..models import PmtMethod, Subscription, Transaction
 
-logger = getLogger(__name__)
+log = getLogger(__name__)
 
 
 class Deposit:

@@ -14,7 +14,7 @@ from .notify import Notifier
 from .payment import Deposit, Processor
 from .queue import QueueAgent, cron
 
-logger = getLogger(__name__)
+log = getLogger(__name__)
 
 
 def get_event(slug=None) -> Event:

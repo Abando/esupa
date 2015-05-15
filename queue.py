@@ -17,7 +17,7 @@ May scalability ever become an issue, replace this with something like Celery an
 RabbitMQ. Let's not reinvent the wheel too much, shall we?
 """
 
-logger = getLogger(__name__)
+log = getLogger(__name__)
 
 _lock = Lock()  # this could be event specific, but for now let's keep it global
 

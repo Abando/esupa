@@ -1,12 +1,14 @@
 # coding=utf-8
 from datetime import date, timedelta
 from decimal import Decimal
+from logging import getLogger
 
 from django.contrib.auth.models import User
 from django.db import models
 from django.utils.timezone import now
 
 
+log = getLogger(__name__)
 PriceField = lambda: models.DecimalField(max_digits=7, decimal_places=2)
 
 

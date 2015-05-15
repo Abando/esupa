@@ -8,7 +8,7 @@ from django.utils import formats
 
 from .models import Subscription, Optional
 
-logger = getLogger(__name__)
+log = getLogger(__name__)
 
 
 class ModelPricedOptInField(forms.ModelMultipleChoiceField):

@@ -8,7 +8,7 @@ from django.core.urlresolvers import reverse
 from .models import Subscription
 
 
-logger = getLogger(__name__)
+log = getLogger(__name__)
 
 
 class Notifier:
@@ -21,7 +21,7 @@ class Notifier:
         subject = '%s - %s' % (subject, event.name)
         body = (self.s.badge + ',', '') + body + ('', '=' * len(event.name), event.name, event.url)
         EmailMessage(subject, body, to=[self.s.email]).send(fail_silently=True)
-        logger.debug('Notified %d=%s: %s', self.s.id, self.s.badge, subject)
+        log.debug('Notified %d=%s: %s', self.s.id, self.s.badge, subject)
 
     def can_pay(self):
         """This can happen in two cases, (1) esupa staff data verify accepted, or (2) the queue moved."""
@@ -58,7 +58,7 @@ class Notifier:
             self.s.id, self.s.badge, reverse('esupa-verify-event', args=[self.s.event.id]))
         recipients = User.objects.filter(is_staff=True).values_list('email', flat=True)
         EmailMessage(subject, body, to=recipients).send(fail_silently=True)
-        logger.debug('Notified staff about %d=%s, state %s', self.s.id, self.s.badge, self.s.state)
+        log.debug('Notified staff about %d=%s, state %s', self.s.id, self.s.badge, self.s.state)
 
 
 class BatchNotifier:
