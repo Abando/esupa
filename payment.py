@@ -10,33 +10,41 @@ from .models import PmtMethod, Subscription, Transaction
 
 logger = getLogger(__name__)
 
-# TODO: this should be some decent dependency injection instead
-if hasattr(settings, 'PAGSEGURO_EMAIL'):
-    from .processors.pagseguro import PagSeguroProcessor
-else:
-    PagSeguroProcessor = None
-
 
 class Processor:
+    _initialized = False
+    _processors = {}
+    slug = None
+
     @classmethod
     def static_init(cls):
-        if PagSeguroProcessor:
-            PagSeguroProcessor.static_init()
+        if not cls._initialized:
+            if hasattr(settings, 'PAGSEGURO_EMAIL'):
+                from .processors.pagseguro import PagSeguroProcessor
+
+                PagSeguroProcessor.static_init()
+                cls._processors[PagSeguroProcessor.slug] = PagSeguroProcessor
+            cls._initialized = True
 
     @classmethod
     def get(cls, subscription):
+        cls.static_init()
         if not subscription.id:
             raise PermissionDenied('Payment without subscription.')
         tset = subscription.transaction_set
         transaction = tset.filter(method=PmtMethod.PAGSEGURO, filled_at__isnull=True).first() or \
             tset.create(subscription=subscription, value=subscription.price, method=PmtMethod.PAGSEGURO)
-        # Add support for other processors here.
-        return PagSeguroProcessor(transaction)
+        processor_slug = 'pagseguro'  # TODO: add a selector, somehow (no idea how)
+        processors = cls._processors
+        processor = processors[processor_slug]
+        return processor(transaction)
 
-    @staticmethod
-    def dispatch_view(slug, request):
-        if slug == 'pagseguro':
-            return PagSeguroProcessor.view(request)
+    @classmethod
+    def dispatch_view(cls, slug, request):
+        cls.static_init()
+        processor = cls._processors.get(slug)
+        if issubclass(processor, cls):
+            processor.view(request)
         else:
             return HttpResponseBadRequest()
 
@@ -76,6 +84,3 @@ class Deposit:
         transaction.accepted = acceptable
         transaction.ended_at = now()
         transaction.save()
-
-
-Processor.static_init()

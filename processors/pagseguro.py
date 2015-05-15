@@ -16,6 +16,8 @@ logger = getLogger(__name__)
 
 
 class PagSeguroProcessor(Processor):
+    slug = 'pagseguro'
+
     @classmethod
     def static_init(cls):
         notificacao_recebida.connect(PagSeguroProcessor.receive_notification)
@@ -26,7 +28,7 @@ class PagSeguroProcessor(Processor):
         # this will circle over through pagseguro's event dispatch according to the signal we connected at static_init
 
     @staticmethod
-    def receive_notification(transaction, sender=None):
+    def receive_notification(transaction, sender=None, **_):
         assert isinstance(transaction, pagseguro.models.Transaction)
         assert isinstance(sender, PagSeguroApi)
         tid = int(transaction.reference)
@@ -39,10 +41,10 @@ class PagSeguroProcessor(Processor):
 
     def generate_transaction_url(self) -> str:
         event = self.t.subscription.event
-        api = PagSeguroApi(self.t.id)
+        api = PagSeguroApi(reference=self.t.id)
         api.add_item(PagSeguroItem(id='e%d' % event.id, description=event.name,
                                    amount=event.price, quantity=1))
-        for optional in self.t.subscription.optionals:
+        for optional in self.t.subscription.optionals.all():
             api.add_item(PagSeguroItem(id='o%d' % optional.id, description=optional.name,
                                        amount=optional.price, quantity=1))
         data = api.checkout()
