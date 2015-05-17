@@ -80,7 +80,7 @@ class SubsState(Enum):
 class Event(models.Model):
     name = models.CharField(max_length=20)
     slug = models.SlugField(blank=True)
-    url = models.TextField(blank=True)
+    url = models.URLField(blank=True)
     starts_at = models.DateTimeField()
     min_age = models.IntegerField(default=0)
     price = PriceField()
