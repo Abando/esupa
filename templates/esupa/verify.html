@@ -59,8 +59,8 @@
                     {% endfor %}
                 </table>
                 {% if s.state == VERIFYING_DATA %}
-                <button name="action" value="s {{t.id}} ok"> Approve!</button>
-                <button name="action" value="s {{t.id}} bad"> Deny!</button>
+                <button name="action" value="s {{s.id}} ok"> Approve!</button>
+                <button name="action" value="s {{s.id}} bad"> Deny!</button>
                 {% endif %}
             </td>
         </tr>
