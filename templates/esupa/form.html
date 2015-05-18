@@ -25,9 +25,9 @@
     <div class="row">
         <div class="large-12 columns">
             <p>
-                Sua inscrição está: <strong>{{subs_state}}</strong>
+                Sua inscrição está: <strong>{{state}}</strong>
             </p>
-            {% if subscription.state >= subs_state.CONFIRMED %}
+            {% if subscription.state >= state.CONFIRMED %}
             <p>
                 Nos vemos no {{event.name}}!
             </p>

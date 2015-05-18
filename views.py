@@ -68,7 +68,6 @@ def view_subscribe(request, eslug=None) -> HttpResponse:
         'actions': buttons,
         'event': event,
         'subscription': subscription,
-        'subs_state': SubsState(subscription.state),
     }
     if not event.subs_open:
         form.freeze()
@@ -118,6 +117,7 @@ def view_subscribe(request, eslug=None) -> HttpResponse:
                 buttons.append(('pay_none', 'Entrar na fila de pagamento'))
 
     # ...whew.
+    context['state'] = SubsState(subscription.state)
     return render(request, 'esupa/form.html', context)
 
 
