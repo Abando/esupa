@@ -65,7 +65,7 @@ class SubscriptionForm(forms.ModelForm):
                   'problemas respiratórios, do coração, alergias (alimentares e medicamentosas), '
                   'qualquer problema ou condição que necessite de cuidado especial.')
     optionals = ModelPricedOptInField(label='Opcional', required=False)
-    agreed = forms.BooleanField(label='Concordo em seguir o código de conduta.')
+    agreed = forms.BooleanField(label='Li e concordo com o regulamento desse ano.')
 
     class Meta:
         model = Subscription
