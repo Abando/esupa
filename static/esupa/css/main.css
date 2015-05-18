@@ -36,3 +36,18 @@ header{
 header img{width:100%}
 header h1{color:#fff}
 p{margin-bottom: 2.5rem;}
+
+body.r-login{
+	background-color:#6729a7;
+}
+body.r-login div.ua-wnd{
+  background-color:#FFF;
+  border-radius:3px;
+  border:0;
+}
+body.r-login img{
+  width: 20vw;
+  margin:25px;
+}
+body.r-login small{color:#fff;}
+#login{display:none;}
