@@ -7,6 +7,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseNotFound, HttpResponseForbidden, Http404
 from django.shortcuts import redirect, render
 from django.utils.timezone import now
+from django.views.decorators.csrf import csrf_exempt
 
 from .forms import SubscriptionForm, UploadForm
 from .models import Event, Subscription, SubsState, Transaction
@@ -133,6 +134,7 @@ def view_cron(_, secret) -> HttpResponse:
     return HttpResponse()  # no response
 
 
+@csrf_exempt
 def view_processor(request, slug) -> HttpResponse:
     return Processor.dispatch_view(slug, request)
 
