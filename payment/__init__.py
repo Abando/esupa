@@ -44,7 +44,7 @@ class Processor:
         cls.static_init()
         processor = cls._processors.get(slug)
         if issubclass(processor, cls):
-            processor.view(request)
+            return processor.view(request)
         else:
             return HttpResponseBadRequest()
 

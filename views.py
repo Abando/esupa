@@ -136,7 +136,7 @@ def view_cron(_, secret) -> HttpResponse:
 
 @csrf_exempt
 def view_processor(request, slug) -> HttpResponse:
-    return Processor.dispatch_view(slug, request)
+    return Processor.dispatch_view(slug, request) or HttpResponse()
 
 
 @login_required
