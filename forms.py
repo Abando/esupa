@@ -41,7 +41,7 @@ class SubscriptionForm(forms.ModelForm):
         help_text='Em caso de desencontro no dia do Abando, vamos telefonar esse número.')
     born = forms.DateField(
         label='Data de nascimento',
-        input_formats='%Y-%m-%d %m/%d/%Y %m/%d/%y'.split(),
+        input_formats='%d/%m/%Y %d/%m/%y'.split(),
         help_text='Informe no formato DD/MM/AAAA.')
     shirt_size = forms.ChoiceField(
         label='Tamanho da camiseta',
