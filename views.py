@@ -63,7 +63,7 @@ def view_subscribe(request, eslug=None) -> HttpResponse:
     formdata = request.POST if request.method == 'POST' and action == 'save' else None
     form = SubscriptionForm(data=formdata, instance=subscription)
     buttons = []
-    context = {'subscription_form': form, 'actions': buttons}
+    context = {'subscription_form': form, 'actions': buttons, 'event': event}
     if not event.subs_open:
         form.freeze()
     elif (action == 'view' and not subscription.id) or (action == 'edit') or (action == 'save' and form.errors):
