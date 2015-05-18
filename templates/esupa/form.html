@@ -24,7 +24,6 @@
     {% csrf_token %}
     <div class="row">
         <div class="large-12 columns">
-            {{debug}}
             {{subscription_form.as_p}}
             {% if documents %}
             <ul class='esupa-documents'>
@@ -45,6 +44,13 @@
         </div>
     </div>
 </form>
+{% if subscription.status >= SubsState.CONFIRMED %}
+<div class="row">
+    <div class="large-12 columns">
+        Inscrição confirmada!
+    </div>
+</div>
+{% endif %}
 <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
 <script src="{% static 'esupa/js/foundation.min.js' %}"></script>
 <script>
