@@ -52,7 +52,8 @@ class SubscriptionForm(forms.ModelForm):
         max_length=3,
         help_text='Apenas se souber, informe tipo e fator Rh, por exemplo, O+, AB−, etc.')
     health_insured = forms.BooleanField(
-        label='Possui plano de saúde particular?')
+        label='Possui plano de saúde particular?',
+        required=False)
     contact = forms.CharField(
         label='Contato para emergências',
         widget=widgets.Textarea,
