@@ -29,8 +29,7 @@ class PagSeguroProcessor(Processor):
         # this will circle over through pagseguro's event dispatch according to the signal we connected at static_init
 
     @staticmethod
-    def receive_notification(*args, **_):
-        transaction = args[0]
+    def receive_notification(transaction, **_):
         tid = int(transaction['reference'])
         esupa_transaction = Transaction.objects.get(id=tid)
         PagSeguroProcessor(esupa_transaction).handle_notification(transaction)
@@ -57,7 +56,7 @@ class PagSeguroProcessor(Processor):
             raise ValueError()  # TODO: signal this error some better way
 
     def handle_notification(self, data: dict):
-        subscription = self.t.subcription
+        subscription = self.t.subscription
         try:
             self.t.remote_identifier = data['code']
             self.t.notes += '\n\n[%s] %s %s\n%s' % (data['last_event_date'], data['code'],
