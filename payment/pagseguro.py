@@ -2,6 +2,8 @@
 from logging import getLogger
 
 # sudo -H pip3 install django-pagseguro2
+from django.conf import settings
+from django.core.urlresolvers import reverse
 import pagseguro.models  # possible name clashes
 from pagseguro import views
 from pagseguro.api import PagSeguroApi, PagSeguroItem
@@ -41,7 +43,9 @@ class PagSeguroProcessor(Processor):
 
     def generate_transaction_url(self) -> str:
         event = self.t.subscription.event
-        api = PagSeguroApi(reference=self.t.id)
+        notification_url = settings.BASE_PUBLIC_URI + reverse('esupa-processor', args=['pagseguro'])
+        log.debug('Setting notification URI: %s', notification_url)
+        api = PagSeguroApi(reference=self.t.id, notificationURL=notification_url)
         api.add_item(PagSeguroItem(id='e%d' % event.id, description=event.name,
                                    amount=event.price, quantity=1))
         for optional in self.t.subscription.optionals.all():
