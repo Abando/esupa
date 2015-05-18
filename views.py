@@ -68,7 +68,7 @@ def view_subscribe(request, eslug=None) -> HttpResponse:
         'actions': buttons,
         'event': event,
         'subscription': subscription,
-        'SubsState': SubsState,
+        'SubsState': SubsState(subscription.state),
     }
     if not event.subs_open:
         form.freeze()
