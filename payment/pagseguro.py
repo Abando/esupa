@@ -6,6 +6,7 @@ from django.conf import settings
 from django.core.urlresolvers import reverse
 from pagseguro import views
 from pagseguro.api import PagSeguroApi, PagSeguroItem
+from pagseguro.settings import TRANSACTION_STATUS
 from pagseguro.signals import notificacao_recebida
 
 from . import Processor
@@ -64,7 +65,7 @@ class PagSeguroProcessor(Processor):
             notify = Notifier(subscription)
             # pagseguro.models.TRANSACTION_STATUS_CHOICES:
             # aguardando, em_analise, pago, disponivel, em_disputa, devolvido, cancelado
-            status = data['status']
+            status = TRANSACTION_STATUS[data['status']]
             if status in ['aguardando', 'em_analise']:
                 # This bit of logic is not strictly needed. I'm just making sure data is still sane.
                 # 'em_analise' means PagSeguro is verifying pay, not esupa staff users, so we just keep waiting.
