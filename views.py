@@ -3,8 +3,9 @@ from logging import getLogger
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
-from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseNotFound, HttpResponseForbidden, Http404
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, Http404, HttpRequest
 from django.shortcuts import redirect, render
 from django.utils.timezone import now
 from django.views.decorators.csrf import csrf_exempt
@@ -24,16 +25,16 @@ def get_event(slug=None) -> Event:
         try:
             return Event.objects.get(slug=slug)
         except ObjectDoesNotExist:
-            raise Http404()
+            raise Http404("No such event.")
     else:
         e = Event.objects.filter(starts_at__gt=now()).order_by('starts_at').first()
         if e:
             return e
         else:
-            raise Http404()
+            raise Http404("No default event.")
 
 
-def get_subscription(event, user) -> Subscription:
+def get_subscription(event: Event, user: User) -> Subscription:
     """Takes existing subscription if available, creates a new one otherwise."""
     queryset = Subscription.objects
     queryset = queryset.filter(event=event, user=user)
@@ -44,7 +45,7 @@ def get_subscription(event, user) -> Subscription:
 
 
 @login_required
-def view_subscribe(request, eslug=None) -> HttpResponse:
+def view_subscribe(request: HttpRequest, eslug=None) -> HttpResponse:
     event = get_event(eslug)
     subscription = get_subscription(event, request.user)
     action = request.POST.get('action', default='view')
@@ -122,13 +123,13 @@ def view_subscribe(request, eslug=None) -> HttpResponse:
 
 
 @login_required
-def view_transaction_document(request, tid) -> HttpResponse:
+def view_transaction_document(request: HttpRequest, tid) -> HttpResponse:
     # Add ETag generation & verification… maybe… eventually…
     trans = Transaction.objects.get(id=tid)
     if trans is None or not trans.document:
-        return HttpResponseNotFound()
+        raise Http404("No such document.")
     if not request.user.is_staff and trans.subscription.user != request.user:
-        return HttpResponseForbidden()
+        return HttpResponseForbidden("That document isn't yours and you're not marked as staff.")
     response = HttpResponse(trans.document, content_type='image')
     return response
 
@@ -141,14 +142,14 @@ def view_cron(_, secret) -> HttpResponse:
 
 
 @csrf_exempt
-def view_processor(request, slug) -> HttpResponse:
+def view_processor(request: HttpRequest, slug) -> HttpResponse:
     return Processor.dispatch_view(slug, request) or HttpResponse()
 
 
 @login_required
-def view_verify(request) -> HttpResponse:
+def view_verify(request: HttpRequest) -> HttpResponse:
     if not request.user.is_staff:
-        return HttpResponseForbidden()
+        return HttpResponseForbidden("You user ID is %d. You're not marked as staff." % request.user.id)
     if request.method == 'POST':
         what, oid, acceptable = request.POST['action'].split()
         oid, acceptable = int(oid), (acceptable == 'ok')
@@ -197,7 +198,7 @@ def view_verify(request) -> HttpResponse:
 
 
 @login_required
-def view_verify_event(request, eid) -> HttpResponse:
+def view_verify_event(request: HttpRequest, eid) -> HttpResponse:
     if not request.user.is_staff:
         return HttpResponseForbidden()
     event = Event.objects.get(id=eid)
