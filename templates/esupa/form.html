@@ -24,6 +24,14 @@
     {% csrf_token %}
     <div class="row">
         <div class="large-12 columns">
+            <p>
+                Sua inscrição está: <strong>{{subs_state}}</strong>
+            </p>
+            {% if subscription.state >= subs_state.CONFIRMED %}
+            <p>
+                Nos vemos no {{event.name}}!
+            </p>
+            {% endif %}
             {{subscription_form.as_p}}
             {% if documents %}
             <ul class='esupa-documents'>
@@ -44,13 +52,6 @@
         </div>
     </div>
 </form>
-{% if subscription.status >= subs_state.CONFIRMED %}
-<div class="row">
-    <div class="large-12 columns">
-        Inscrição confirmada!
-    </div>
-</div>
-{% endif %}
 <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
 <script src="{% static 'esupa/js/foundation.min.js' %}"></script>
 <script>
