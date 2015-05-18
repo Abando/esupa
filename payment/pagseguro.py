@@ -59,8 +59,7 @@ class PagSeguroProcessor(Processor):
         subscription = self.t.subscription
         try:
             self.t.remote_identifier = data['code']
-            self.t.notes += '\n\n[%s] %s %s\n%s' % (data['last_event_date'], data['code'],
-                                                    data['status'], data['content'])
+            self.t.notes += '\n[%s] %s %s' % (data['lastEventDate'], data['code'], data['status'])
             queue = QueueAgent(subscription)
             notify = Notifier(subscription)
             # pagseguro.models.TRANSACTION_STATUS_CHOICES:
