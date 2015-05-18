@@ -11,6 +11,13 @@ from .models import Subscription
 log = getLogger(__name__)
 
 
+def _mail(recipients, subject, body):
+    try:
+        EmailMessage(subject, body, to=recipients).send(fail_silently=True)
+    except ConnectionRefusedError:
+        log.error("Connection refused trying to mail %s about %s", ','.join(recipients), subject)
+
+
 class Notifier:
     def __init__(self, subscription):
         assert isinstance(subscription, Subscription)
@@ -20,7 +27,7 @@ class Notifier:
         event = self.s.event
         subject = '%s - %s' % (subject, event.name)
         body = (self.s.badge + ',', '') + body + ('', '=' * len(event.name), event.name, event.url)
-        EmailMessage(subject, body, to=[self.s.email]).send(fail_silently=True)
+        _mail([self.s.email], subject, body)
         log.debug('Notified %d=%s: %s', self.s.id, self.s.badge, subject)
 
     def can_pay(self):
@@ -57,7 +64,7 @@ class Notifier:
         body = 'Verificar inscrição #%d (%s): %s' % (
             self.s.id, self.s.badge, reverse('esupa-verify-event', args=[self.s.event.id]))
         recipients = User.objects.filter(is_staff=True).values_list('email', flat=True)
-        EmailMessage(subject, body, to=recipients).send(fail_silently=True)
+        _mail(recipients, subject, body)
         log.debug('Notified staff about %d=%s, state %s', self.s.id, self.s.badge, self.s.state)
 
 

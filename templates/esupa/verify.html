@@ -16,7 +16,7 @@
     </tr>
     {% for event in events.iterator %}
     <tr>
-        <th><a href="{% url 'esupa-verify-event' event.id %}">{{event.name}}</a></th>
+        <th><strong>{{event.name}}</strong></th>
         <td>{{event.starts_at}}</td>
         <td>{{event.capacity}}</td>
         <td>{{event.num_confirmed}}</td>
@@ -45,14 +45,22 @@
             <td>
                 <table border="1">
                     {% for t in s.transaction_set.iterator %}
-                    <td>{{t.id}}</td>
-                    <td>{{t.value}}</td>
-                    <td>[<a href="{% url 'esupa-trans-doc' t.id %}"> image </a>]</td>
+                    <tr>
+                        <td>{{t.id}}</td>
+                        <td>{{t.value}}</td>
+                        <td>[<a href="{% url 'esupa-trans-doc' t.id %}"> image </a>]</td>
+                        {% if s.state == VERIFYING_PAY %}
+                        <td>
+                            <button name="action" value="t {{t.id}} ok"> Approve!</button>
+                            <button name="action" value="t {{t.id}} bad"> Deny!</button>
+                        </td>
+                        {% endif %}
+                    </tr>
                     {% endfor %}
                 </table>
-                {% if s.state == VERIFYING_PAY %}
-                <button name="action" value="{{s.id}} ok"> Approve!</button>
-                <button name="action" value="{{s.id}} bad"> Deny!</button>
+                {% if s.state == VERIFYING_DATA %}
+                <button name="action" value="s {{t.id}} ok"> Approve!</button>
+                <button name="action" value="s {{t.id}} bad"> Deny!</button>
                 {% endif %}
             </td>
         </tr>

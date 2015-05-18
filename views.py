@@ -150,10 +150,16 @@ def view_verify(request) -> HttpResponse:
     if not request.user.is_staff:
         return HttpResponseForbidden()
     if request.method == 'POST':
-        sid, acceptable = request.POST['action'].split()
-        acceptable = acceptable == 'ok'
-        subscription = Subscription.objects.get(id=int(sid))
+        what, oid, acceptable = request.POST['action'].split()
+        oid, acceptable = int(oid), (acceptable == 'ok')
+        if what == 's':
+            subscription = Subscription.objects.get(id=oid)
+            transaction = None
+        else:
+            transaction = Transaction.objects.get(id=oid)
+            subscription = transaction.subscription
         notify = Notifier(subscription)
+        # the logic here is a bit too mixed. we might want to separate concerns more clearly.
         if subscription.state == SubsState.VERIFYING_DATA:
             if acceptable:
                 subscription.state = SubsState.ACCEPTABLE
@@ -164,7 +170,7 @@ def view_verify(request) -> HttpResponse:
                 subscription.save()
                 notify.data_denied()
         elif subscription.state == SubsState.VERIFYING_PAY:
-            Deposit(subscription).accept(acceptable)
+            Deposit(transaction).accept(acceptable)
             if acceptable:
                 subscription.state = SubsState.CONFIRMED
                 subscription.wait_until = None
@@ -178,8 +184,8 @@ def view_verify(request) -> HttpResponse:
                 QueueAgent(subscription).remove()
                 notify.pay_denied()
         else:
-            return HttpResponseBadRequest('Invalid attempt to %s subscription %d (%s)' % (
-                'accept' if acceptable else 'reject', sid, subscription.badge))
+            return HttpResponseBadRequest('Invalid attempt to %s %s=%d (%s) because subscription state is %s' % (
+                'accept' if acceptable else 'reject', what, oid, subscription.badge, SubsState(subscription.state)))
     context = {
         'VERIFYING_PAY': SubsState.VERIFYING_PAY,
         'VERIFYING_DATA': SubsState.VERIFYING_DATA,
