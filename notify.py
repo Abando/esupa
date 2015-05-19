@@ -13,16 +13,16 @@ log = getLogger(__name__)
 
 
 def _mail(recipients, subject, body):
+    it = 'mail#%d' % randint(0, 0x10000)
     def mail():
-        it = randint(0, 0x10000)
         try:
-            log.info("NOT Sending mail message %d to %s about %s", it, ','.join(recipients), subject)
-            #EmailMessage(subject, body, to=recipients).send(fail_silently=True)
-            log.info("NOT Sent mail message %d")
+            log.info("Trying to send %s to %s about %s", it, ','.join(recipients), subject)
+            EmailMessage(subject, body, to=recipients).send(fail_silently=True)
+            log.info("Sent %s alright", it)
         except ConnectionRefusedError as ex:
-            log.error("Connection send mail message %d to %s", it, ','.join(recipients), exc_info=True)
+            log.error("Connection failed for %s to %s", it, ','.join(recipients), exc_info=True)
 
-    Thread(target=mail).run()  # this will come back to bite our butt, rest assured.
+    Thread(target=mail, name=it).start()  # this will come back to bite our butt, rest assured.
 
 
 class Notifier:
