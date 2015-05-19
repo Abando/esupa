@@ -49,7 +49,7 @@ class PmtMethod(Enum):
     PAGSEGURO = 2
     choices = (
         (CASH, 'Em Mãos'),
-        (DEPOSIT, 'Depósito Bancário'),
+        (DEPOSIT, 'Depósito'),
         (PAGSEGURO, 'PagSeguro'),
     )
 
@@ -185,7 +185,7 @@ class Subscription(models.Model):
 
     @property
     def str_state(self) -> str:
-        return SubsState(self.state)
+        return str(SubsState(self.state))
 
 
 class Transaction(models.Model):
@@ -212,3 +212,7 @@ class Transaction(models.Model):
             self.ended_at = now()
         elif self.ended_at and not value:
             self.ended_at = None
+
+    @property
+    def str_method(self):
+        return str(PmtMethod(self.method))

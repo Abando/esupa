@@ -52,7 +52,14 @@
                     <tr>
                         <td>{{t.id}}</td>
                         <td>{{t.value}}</td>
-                        <td>[<a href="{% url 'esupa-trans-doc' t.id %}"> image </a>]</td>
+                        <td>{{t.str_method}}</td>
+                        <td>
+                            {% if t.filled_at %}
+                            [<a href="{% url 'esupa-trans-doc' t.id %}">image</a>]
+                            {% else %}
+                            [blank]
+                            {% endif %}
+                        </td>
                         {% if s.state == state.VERIFYING_PAY %}
                         <td>
                             <button name="action" value="t {{t.id}} ok"> Approve!</button>
@@ -67,7 +74,7 @@
                 <button name="action" value="s {{s.id}} bad">Deny!</button>
                 {% endif %}
                 {% if state.NEW < s.state and s.state < state.VERIFYING_PAY %}
-                <button name="action" value="s {{s.id}} ok">Paid Cash!</button>
+                <!--button name="action" value="s {{s.id}} ok">Paid Cash!</button-->
                 {% endif %}
             </td>
         </tr>
