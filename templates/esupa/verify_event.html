@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>Event {{event.id}}: {{event.name}}</title>
+</head>
+<body>
+<h1>{{event.name}}</h1>
+<table border="1" cellspacing="0">
+    <tr>
+        <th>Starts at</th>
+        <th>Capacity</th>
+        <th>Confirmed</th>
+        <th>Pending</th>
+        <th>Openings</th>
+    </tr>
+    <tr>
+        <td>{{event.starts_at}}</td>
+        <td>{{event.capacity}}</td>
+        <td>{{event.num_confirmed}}</td>
+        <td>{{event.num_pending}}</td>
+        <td>{{event.num_openings}}</td>
+    </tr>
+</table>
+<form>{% csrf_token %}
+    <h2>Subscriptions</h2>
+    <table border="1" cellspacing="0">
+        <tr>
+            <th>id</th>
+            <th>Badge</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Doc</th>
+            <th>Phone</th>
+            <th>State</th>
+            <th>Price</th>
+            <th>Transactions</th>
+        </tr>
+        {% for s in subscriptions %}
+        <tr bgcolor="{% cycle 'lightgrey' 'white' %}">
+            <td>{{s.id}}</td>
+            <td>{{s.badge}}</td>
+            <td>{{s.full_name}}</td>
+            <td>{{s.email}}</td>
+            <td>{{s.document}}</td>
+            <td>{{s.phone}}</td>
+            <td>{{s.str_state}}</td>
+            <td>{{s.price}}</td>
+            <td>
+                <table border="1" cellspacing="0">
+                    {% for t in s.transaction_set.iterator %}
+                    <tr>
+                        <td>{{t.id}}</td>
+                        <td>{{t.value}}</td>
+                        <td>[<a href="{% url 'esupa-trans-doc' t.id %}"> image </a>]</td>
+                        {% if s.state == state.VERIFYING_PAY %}
+                        <td>
+                            <button name="action" value="t {{t.id}} ok"> Approve!</button>
+                            <button name="action" value="t {{t.id}} bad"> Deny!</button>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </table>
+                {% if s.state == state.VERIFYING_DATA %}
+                <button name="action" value="s {{s.id}} ok">Approve!</button>
+                <button name="action" value="s {{s.id}} bad">Deny!</button>
+                {% endif %}
+                {% if state.NEW < s.state and s.state < state.VERIFYING_PAY %}
+                <button name="action" value="s {{s.id}} ok">Paid Cash!</button>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</form>
+</body>
+</html>

@@ -28,9 +28,9 @@ class Enum:
             elif desc == value:
                 return key
 
-    def __init__(self, value):
+    def __init__(self, value=None):
         for row in type(self).choices:
-            if value in row:
+            if value is None or value in row:
                 self._value = row[0]
                 self._descr = row[1]
                 return
@@ -182,6 +182,10 @@ class Subscription(models.Model):
     @property
     def price(self) -> Decimal:
         return self.event.price + (self.optionals.aggregate(models.Sum('price'))['price__sum'] or 0)
+
+    @property
+    def str_state(self) -> str:
+        return SubsState(self.state)
 
 
 class Transaction(models.Model):

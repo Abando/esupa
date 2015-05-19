@@ -16,7 +16,7 @@
     </tr>
     {% for event in events.iterator %}
     <tr>
-        <th><strong>{{event.name}}</strong></th>
+        <th><a href="{% url 'esupa-verify-event' event.id %}">{{event.name}}</a></th>
         <td>{{event.starts_at}}</td>
         <td>{{event.capacity}}</td>
         <td>{{event.num_confirmed}}</td>
@@ -25,47 +25,5 @@
     </tr>
     {% endfor %}
 </table>
-<form method="post">{% csrf_token %}
-    <h2>Subscriptions to verify</h2>
-    <table border="1" cellspacing="0">
-        {% for s in subscriptions %}
-        <tr>
-            <td>
-                id: {{s.id}}<br/>
-                badge: {{s.badge}}<br/>
-                name: {{s.full_name}}<br/>
-                email: {{s.email}}<br/>
-                document: {{s.document}}<br/>
-                phone: {{s.phone}}<br/>
-                {% if s.state == VERIFYING_DATA %}
-                <button name="action" value="{{s.id}} ok"> Approve!</button>
-                <button name="action" value="{{s.id}} bad"> Deny!</button>
-                {% endif %}
-            </td>
-            <td>
-                <table border="1" cellspacing="0">
-                    {% for t in s.transaction_set.iterator %}
-                    <tr>
-                        <td>{{t.id}}</td>
-                        <td>{{t.value}}</td>
-                        <td>[<a href="{% url 'esupa-trans-doc' t.id %}"> image </a>]</td>
-                        {% if s.state == VERIFYING_PAY %}
-                        <td>
-                            <button name="action" value="t {{t.id}} ok"> Approve!</button>
-                            <button name="action" value="t {{t.id}} bad"> Deny!</button>
-                        </td>
-                        {% endif %}
-                    </tr>
-                    {% endfor %}
-                </table>
-                {% if s.state == VERIFYING_DATA %}
-                <button name="action" value="s {{s.id}} ok"> Approve!</button>
-                <button name="action" value="s {{s.id}} bad"> Deny!</button>
-                {% endif %}
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
-</form>
 </body>
 </html>

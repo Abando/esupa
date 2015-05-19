@@ -4,8 +4,8 @@ from logging import getLogger
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.core.exceptions import ObjectDoesNotExist
-from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, Http404, HttpRequest
+from django.core.exceptions import ObjectDoesNotExist, PermissionDenied, SuspiciousOperation
+from django.http import HttpResponse, Http404, HttpRequest, HttpResponseBadRequest
 from django.shortcuts import redirect, render
 from django.utils.timezone import now
 from django.views.decorators.csrf import csrf_exempt
@@ -56,7 +56,7 @@ def view_subscribe(request: HttpRequest, eslug=None) -> HttpResponse:
     if action == 'pay_processor' and event.sales_open and queue.within_capacity:
         return redirect(Processor.get(subscription).generate_transaction_url())
     elif state == SubsState.DENIED:
-        return HttpResponseForbidden()
+        raise PermissionDenied
 
     # display subscription information
     if not subscription.id:
@@ -129,14 +129,14 @@ def view_transaction_document(request: HttpRequest, tid) -> HttpResponse:
     if trans is None or not trans.document:
         raise Http404("No such document.")
     if not request.user.is_staff and trans.subscription.user != request.user:
-        return HttpResponseForbidden("That document isn't yours and you're not marked as staff.")
+        return PermissionDenied
     response = HttpResponse(trans.document, content_type='image')
     return response
 
 
 def view_cron(_, secret) -> HttpResponse:
     if secret != settings.ESUPA_CRON_SECRET:
-        return HttpResponseBadRequest()
+        raise SuspiciousOperation
     cron()
     return HttpResponse()  # no response
 
@@ -146,10 +146,23 @@ def view_processor(request: HttpRequest, slug) -> HttpResponse:
     return Processor.dispatch_view(slug, request) or HttpResponse()
 
 
+def staff_only(user: User):
+    if not user.is_staff:
+        raise PermissionDenied("You user ID is %d. You're not marked as staff." % user.id)
+
+
 @login_required
 def view_verify(request: HttpRequest) -> HttpResponse:
-    if not request.user.is_staff:
-        return HttpResponseForbidden("You user ID is %d. You're not marked as staff." % request.user.id)
+    staff_only(request.user)
+    return render(request, 'esupa/verify.html', {'events': Event.objects})
+
+
+@login_required
+def view_verify_event(request: HttpRequest, eid) -> HttpResponse:
+    staff_only(request.user)
+    event = Event.objects.get(id=int(eid))
+    subscriptions = event.subscription_set.order_by('-state').all()
+    context = {'event': event, 'subscriptions': subscriptions, 'state': SubsState()}
     if request.method == 'POST':
         what, oid, acceptable = request.POST['action'].split()
         oid, acceptable = int(oid), (acceptable == 'ok')
@@ -187,19 +200,4 @@ def view_verify(request: HttpRequest) -> HttpResponse:
         else:
             return HttpResponseBadRequest('Invalid attempt to %s %s=%d (%s) because subscription state is %s' % (
                 'accept' if acceptable else 'reject', what, oid, subscription.badge, SubsState(subscription.state)))
-    context = {
-        'VERIFYING_PAY': SubsState.VERIFYING_PAY,
-        'VERIFYING_DATA': SubsState.VERIFYING_DATA,
-        'states': SubsState.choices,
-        'events': Event.objects,
-        'subscriptions': Subscription.objects.filter(state__in=[SubsState.VERIFYING_DATA, SubsState.VERIFYING_PAY]),
-    }
-    return render(request, 'esupa/verify.html', context)
-
-
-@login_required
-def view_verify_event(request: HttpRequest, eid) -> HttpResponse:
-    if not request.user.is_staff:
-        return HttpResponseForbidden()
-    event = Event.objects.get(id=eid)
-    return HttpResponse(str(event))
+    return render(request, 'esupa/verify_event.html', context)
