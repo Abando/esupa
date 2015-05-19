@@ -5,6 +5,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.forms import widgets
 from django.utils import formats
+from django.utils.safestring import mark_safe
 
 from .models import Subscription, Optional
 
@@ -66,7 +67,7 @@ class SubscriptionForm(forms.ModelForm):
                   'problemas respiratórios, do coração, alergias (alimentares e medicamentosas), '
                   'qualquer problema ou condição que necessite de cuidado especial.')
     optionals = ModelPricedOptInField(label='Opcional', required=False)
-    agreed = forms.BooleanField(label='Li e concordo com o regulamento desse ano.')
+    agreed = forms.BooleanField(label='Li e concordo com o [regulamento desse ano].')
 
     class Meta:
         model = Subscription
@@ -77,6 +78,7 @@ class SubscriptionForm(forms.ModelForm):
         subscription = self.instance
         event = subscription.event
         self.fields['optionals'].queryset = event.optional_set
+        self._add_agreement_link(event)
         self._add_age_warning(event)
         self.max_born = event.max_born
 
@@ -94,6 +96,15 @@ class SubscriptionForm(forms.ModelForm):
         for field in self.fields.values():
             field.widget = DisplayWidget()
             field.help_text = None
+
+    def _add_agreement_link(self, event):
+        label = str(self.fields['agreed'].label)
+        url = event.agreement_url
+        if url:
+            label = mark_safe(label.replace('[', '<a href="%s">' % event.agreement_url).replace(']', '</a>'))
+        else:
+            label = label.replace('[', '').replace(']', '')
+        self.fields['agreed'].label = label
 
     def _add_age_warning(self, event):
         if not event.min_age:
