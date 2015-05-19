@@ -1,5 +1,7 @@
 # coding=utf-8
 from logging import getLogger
+from random import randint
+from threading import Thread
 
 from django.contrib.auth.models import User
 from django.core.mail import EmailMessage
@@ -7,15 +9,20 @@ from django.core.urlresolvers import reverse
 
 from .models import Subscription
 
-
 log = getLogger(__name__)
 
 
 def _mail(recipients, subject, body):
-    try:
-        EmailMessage(subject, body, to=recipients).send(fail_silently=True)
-    except ConnectionRefusedError:
-        log.error("Connection refused trying to mail %s about %s", ','.join(recipients), subject)
+    def mail():
+        it = randint(0, 0x10000)
+        try:
+            log.info("NOT Sending mail message %d to %s about %s", it, ','.join(recipients), subject)
+            #EmailMessage(subject, body, to=recipients).send(fail_silently=True)
+            log.info("NOT Sent mail message %d")
+        except ConnectionRefusedError as ex:
+            log.error("Connection send mail message %d to %s", it, ','.join(recipients), exc_info=True)
+
+    Thread(target=mail).run()  # this will come back to bite our butt, rest assured.
 
 
 class Notifier:
@@ -28,7 +35,6 @@ class Notifier:
         subject = '%s - %s' % (subject, event.name)
         body = (self.s.badge + ',', '') + body + ('', '=' * len(event.name), event.name, event.url)
         _mail([self.s.email], subject, body)
-        log.debug('Notified %d=%s: %s', self.s.id, self.s.badge, subject)
 
     def can_pay(self):
         """This can happen in two cases, (1) esupa staff data verify accepted, or (2) the queue moved."""
@@ -65,7 +71,6 @@ class Notifier:
             self.s.id, self.s.badge, reverse('esupa-verify-event', args=[self.s.event.id]))
         recipients = User.objects.filter(is_staff=True).values_list('email', flat=True)
         _mail(recipients, subject, body)
-        log.debug('Notified staff about %d=%s, state %s', self.s.id, self.s.badge, self.s.state)
 
 
 class BatchNotifier:
