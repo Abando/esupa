@@ -197,4 +197,4 @@ def view_verify_event(request: HttpRequest, eid) -> HttpResponse:
         else:
             return HttpResponseBadRequest('Invalid attempt to %s %s=%d (%s) because subscription state is %s' % (
                 'accept' if acceptable else 'reject', what, oid, subscription.badge, SubsState(subscription.state)))
-    return render(request, 'esupa/verify_event.html', context)
+    return render(request, 'esupa/event-verify.html', context)
