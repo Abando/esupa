@@ -52,20 +52,20 @@
                     <tr>
                         <td>{{t.id}}</td>
                         <td>{{t.value}}</td>
-                        <td>{{t.str_method}}</td>
-                        <td>
+                        <td title="{{t.created_at}}">{{t.str_method}}</td>
+                        <td title="{{t.filled_at}}">
                             {% if t.filled_at %}
                             [<a href="{% url 'esupa-trans-doc' t.id %}">image</a>]
                             {% else %}
                             [blank]
                             {% endif %}
                         </td>
-                        {% if s.state == state.VERIFYING_PAY %}
-                        <td>
-                            <button name="action" value="t {{t.id}} ok"> Approve!</button>
-                            <button name="action" value="t {{t.id}} bad"> Deny!</button>
+                        <td title="{{t.ended_at}}">
+                            {% if not t.ended_at %}
+                            <button name="action" value="t {{t.id}} ok">✔</button>
+                            <button name="action" value="t {{t.id}} bad">✘</button>
+                            {% elif t.accepted %}✔{% else %}✘{% endif %}
                         </td>
-                        {% endif %}
                     </tr>
                     {% endfor %}
                 </table>

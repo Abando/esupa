@@ -104,7 +104,7 @@ def view_subscribe(request: HttpRequest, eslug=None) -> HttpResponse:
                 subscription.raise_state(SubsState.VERIFYING_PAY)
                 Notifier(subscription).staffer_action_required()
             elif action == 'pay_deposit':
-                deposit.register_intent()
+                deposit.expecting_file = True
             subscription.save()  # action=pay
         if deposit.expecting_file:
             context['upload_form'] = UploadForm(subscription)
@@ -180,20 +180,13 @@ def view_verify_event(request: HttpRequest, eid) -> HttpResponse:
                 subscription.state = SubsState.DENIED
                 subscription.save()
                 notify.data_denied()
-        elif subscription.state == SubsState.VERIFYING_PAY:
-            Deposit(transaction=transaction).accept(acceptable)
-            if acceptable:
-                subscription.state = SubsState.CONFIRMED
-                subscription.wait_until = None
-                subscription.save()
-                notify.confirmed()
-            else:
-                subscription.state = SubsState.ACCEPTABLE
-                subscription.wait_until = None
-                subscription.position = None
-                subscription.save()
-                QueueAgent(subscription).remove()
-                notify.pay_denied()
+        elif subscription.state >= SubsState.ACCEPTABLE:
+            if Deposit(transaction=transaction).transaction.end(acceptable):
+                if acceptable:
+                    notify.confirmed()
+                else:
+                    QueueAgent(subscription).remove()
+                    notify.pay_denied()
         else:
             return HttpResponseBadRequest('Invalid attempt to %s %s=%d (%s) because subscription state is %s' % (
                 'accept' if acceptable else 'reject', what, oid, subscription.badge, SubsState(subscription.state)))

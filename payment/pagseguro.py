@@ -77,15 +77,12 @@ class PagSeguroProcessor(Processor):
             elif status in ['pago', 'disponivel']:
                 # Escrow starts at 'pago' and ends at 'disponivel'. We'll assume that it will always complete
                 # sucessfully because we're optimistic like that. See the dispute section.
-                subscription.raise_state(SubsState.CONFIRMED)
-                self.t.ended = True
-                self.t.accepted = True
-                subscription.position = queue.add()
-                subscription.waiting = False
-                notify.confirmed()
+                if self.t.end(sucessfully=True):
+                    subscription.position = queue.add()
+                    notify.confirmed()
             elif status in ['em_disputa']:
                 # The payment is being disputed. We'll deal with this conservatively, putting the subscriber back into
-                # the queue. I have no idea if this is the best approcach, because we've used PagSeguro for 7 years and
+                # the queue. I have no idea if this is the best approach, because we've used PagSeguro for 7 years and
                 # we haven't even once got a dispute.
                 self.t.ended = False
                 self.t.accepted = False
@@ -95,14 +92,8 @@ class PagSeguroProcessor(Processor):
             elif status in ['devolvido', 'cancelado']:
                 # We have to be careful here wether we have other pending transactions. So we'll first close this
                 # transaction, then peek other transactions before making any changes to the subscription.
-                self.t.ended = True
-                self.t.accepted = False
-                self.t.save()  # so that we won't get this transaction over again
-                if not subscription.transaction_set.filter(ended_at__isnull=True).exists():
+                if self.t.end(sucessfully=False):
                     queue.remove()
-                    subscription.state = SubsState.ACCEPTABLE
-                    subscription.position = None
-                    subscription.waiting = False
                     notify.pay_denied()
             else:
                 raise ValueError('Unknown PagSeguro status code: %s' % status)

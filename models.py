@@ -7,7 +7,6 @@ from django.contrib.auth.models import User
 from django.db import models
 from django.utils.timezone import now
 
-
 log = getLogger(__name__)
 PriceField = lambda: models.DecimalField(max_digits=7, decimal_places=2)
 
@@ -164,9 +163,6 @@ class Subscription(models.Model):
     def raise_state(self, state):
         if self.state < state:
             self.state = state
-            return True
-        else:
-            return False
 
     @property
     def waiting(self) -> bool:
@@ -202,16 +198,33 @@ class Transaction(models.Model):
     notes = models.TextField(blank=True)
     ended_at = models.DateTimeField(null=True, blank=True)
 
-    @property
-    def ended(self) -> bool:
-        return bool(self.ended_at)
+    def end(self, sucessfully) -> bool:
+        """Closes a transaction, and will propagate the appropriate changes to the belonging subscription.
 
-    @ended.setter
-    def ended(self, value):
-        if value and not self.ended_at:
+        :return bool: Whether the state of the subscription was changed."""
+        self.accepted = sucessfully
+        if not self.ended_at:
             self.ended_at = now()
-        elif self.ended_at and not value:
-            self.ended_at = None
+        self.save()
+        subscription = self.subscription
+        if subscription.state >= SubsState.CONFIRMED:
+            # A confirmed subscription can't be touched.
+            return False
+        elif sucessfully:
+            # Transaction was accepted.
+            subscription.raise_state(SubsState.CONFIRMED)
+            subscription.save()
+            return True
+        elif subscription.transaction_set.filter(ended_at__isnull=True, method=self.method).exists():
+            # Pending transaction of this type was rejected, wasn't the last one.
+            return False
+        else:
+            # Last pending transaction of this type was rejected.
+            subscription.state = SubsState.ACCEPTABLE
+            subscription.position = None
+            subscription.waiting = False
+            subscription.save()
+            return True
 
     @property
     def str_method(self):

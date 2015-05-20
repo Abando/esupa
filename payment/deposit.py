@@ -16,30 +16,28 @@ class Deposit:
         if not subscription.id:
             raise PermissionDenied('Payment without subscription.')
         self.subscription = subscription
-        self.transaction = transaction
-        self.slot_qs = subscription.transaction_set.filter(method=PmtMethod.DEPOSIT, filled_at__isnull=True)
-
-    @property
-    def expecting_file(self):
-        return self.slot_qs.exists()
+        self._transaction = transaction
+        self._slot_qs = subscription.transaction_set.filter(method=PmtMethod.DEPOSIT, filled_at__isnull=True)
 
     def got_file(self, file):
-        self._ensure_transaction()
         self.transaction.document = file.read()
         self.transaction.filled_at = now()
         self.transaction.save()
 
-    def register_intent(self):
-        self._ensure_transaction()
-        self.transaction.save()
+    @property
+    def expecting_file(self) -> bool:
+        return self._slot_qs.exists()
 
-    def accept(self, acceptable):
-        self._ensure_transaction()
-        self.transaction.accepted = acceptable
-        self.transaction.ended_at = now()
-        self.transaction.save()
+    @expecting_file.setter
+    def expecting_file(self, value: bool):
+        if value:
+            self.transaction.save()
+        else:
+            self._slot_qs.delete()
 
-    def _ensure_transaction(self):
-        if not self.transaction:
-            self.transaction = self.slot_qs.first() or Transaction(
+    @property
+    def transaction(self) -> Transaction:
+        if not self._transaction:
+            self._transaction = self._slot_qs.first() or Transaction(
                 subscription=self.subscription, value=self.subscription.price, method=PmtMethod.DEPOSIT)
+        return self._transaction
