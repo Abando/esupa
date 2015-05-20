@@ -191,6 +191,7 @@ class Transaction(models.Model):
     created_at = models.DateTimeField(auto_now=True)
     method = PmtMethod.field(default=PmtMethod.CASH)
     remote_identifier = models.CharField(max_length=50, blank=True)
+    mimetype = models.CharField(max_length=255, blank=True)
     document = models.BinaryField(null=True)
     filled_at = models.DateTimeField(null=True, blank=True)
     verifier = models.ForeignKey(User, blank=True, null=True)

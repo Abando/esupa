@@ -21,6 +21,7 @@ class Deposit:
 
     def got_file(self, file):
         self.transaction.document = file.read()
+        self.transaction.mimetype = file.mimetype
         self.transaction.filled_at = now()
         self.transaction.save()
 

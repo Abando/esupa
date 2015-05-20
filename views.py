@@ -130,7 +130,7 @@ def view_transaction_document(request: HttpRequest, tid) -> HttpResponse:
         raise Http404("No such document.")
     if not request.user.is_staff and trans.subscription.user != request.user:
         return PermissionDenied
-    response = HttpResponse(trans.document, content_type='image/jpeg')
+    response = HttpResponse(trans.document, content_type=trans.mimetype)
     return response
 
 
