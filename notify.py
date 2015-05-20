@@ -19,7 +19,7 @@ def _mail(recipients, subject, body):
             log.info("Trying to send %s to %s about %s", it, ','.join(recipients), subject)
             EmailMessage(subject, body, to=recipients).send(fail_silently=True)
             log.info("Sent %s alright", it)
-        except ConnectionRefusedError as ex:
+        except ConnectionRefusedError:
             log.error("Connection failed for %s to %s", it, ','.join(recipients), exc_info=True)
 
     Thread(target=mail, name=it).start()  # this will come back to bite our butt, rest assured.
@@ -33,7 +33,7 @@ class Notifier:
     def _send(self, subject, *body):
         event = self.s.event
         subject = '%s - %s' % (subject, event.name)
-        body = (self.s.badge + ',', '') + body + ('', '=' * len(event.name), event.name, event.url)
+        body = (self.s.badge + ',', '') + body + ('', '=' * len(event.name), event.name)
         _mail([self.s.email], subject, body)
 
     def can_pay(self):
