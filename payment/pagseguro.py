@@ -54,7 +54,7 @@ class PagSeguroProcessor(Processor):
             return data['redirect_url']
         else:
             log.error('Data returned error. %s', repr(data))
-            raise ValueError()  # TODO: signal this error some better way
+            raise ValueError('PagSeguro denied pay. %s' % repr(data))
 
     def handle_notification(self, data: dict):
         subscription = self.t.subscription
