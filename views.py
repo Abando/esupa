@@ -94,7 +94,7 @@ def view_subscribe(request: HttpRequest, eslug=None) -> HttpResponse:
     context['documents'] = subscription.transaction_set.filter(filled_at__isnull=False).values(
         'id', 'filled_at', 'ended_at', 'accepted')
     if SubsState.ACCEPTABLE <= state <= SubsState.VERIFYING_PAY and (event.sales_open or subscription.waiting):
-        deposit = Deposit(subscription)
+        deposit = Deposit(subscription=subscription)
         if action.startswith('pay'):
             subscription.position = queue.add()
             subscription.waiting = queue.within_capacity
@@ -181,7 +181,7 @@ def view_verify_event(request: HttpRequest, eid) -> HttpResponse:
                 subscription.save()
                 notify.data_denied()
         elif subscription.state == SubsState.VERIFYING_PAY:
-            Deposit(transaction).accept(acceptable)
+            Deposit(transaction=transaction).accept(acceptable)
             if acceptable:
                 subscription.state = SubsState.CONFIRMED
                 subscription.wait_until = None
