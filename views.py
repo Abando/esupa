@@ -11,7 +11,7 @@ from django.utils.timezone import now
 from django.views.decorators.csrf import csrf_exempt
 
 from .forms import SubscriptionForm, UploadForm
-from .models import Event, Subscription, SubsState, Transaction
+from .models import Event, Subscription, SubsState, Transaction, PmtMethod
 from .notify import Notifier
 from .payment import Deposit, Processor
 from .queue import QueueAgent, cron
@@ -159,7 +159,8 @@ def view_verify_event(request: HttpRequest, eid) -> HttpResponse:
         raise PermissionDenied
     event = Event.objects.get(id=int(eid))
     subscriptions = event.subscription_set.order_by('-state').all()
-    context = {'event': event, 'subscriptions': subscriptions, 'state': SubsState()}
+    context = {'event': event, 'subscriptions': subscriptions, 'state': SubsState(),
+               'pmethod': PmtMethod()}
     if request.method == 'POST':
         what, oid, acceptable = request.POST['action'].split()
         oid, acceptable = int(oid), (acceptable == 'ok')

@@ -61,10 +61,11 @@
                             {% endif %}
                         </td>
                         <td title="{{t.ended_at}}">
-                            {% if not t.ended_at %}
+                            {% if t.ended_at %}{% if t.accepted %}✔{% else %}✘{% endif %}
+                            {% elif t.method == pmethod.PAGSEGURO %}?{% else %}
                             <button name="action" value="t {{t.id}} ok">✔</button>
                             <button name="action" value="t {{t.id}} bad">✘</button>
-                            {% elif t.accepted %}✔{% else %}✘{% endif %}
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}
