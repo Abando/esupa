@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
-from io import BytesIO
 
 from django.db import models, migrations
 
@@ -8,13 +7,12 @@ from django.db import models, migrations
 from magic import Magic
 
 
-def discover_mimetype(apps, schema_editor):
+def discover_mimetype(apps, _):
     t = apps.get_model('esupa', 'Transaction')
-    magic = Magic()
-    for transaction in t.objects.iterable():
+    magic = Magic(mime=True)
+    for transaction in t.objects.all():
         if transaction.document:
-            buffer = BytesIO(transaction.document)
-            transaction.mimetype = magic.from_buffer(buffer)
+            transaction.mimetype = magic.from_buffer(transaction.document)
             transaction.save()
         print('Transaction#%d detected mimetype is %s.' % (transaction.id, transaction.mimetype))
 

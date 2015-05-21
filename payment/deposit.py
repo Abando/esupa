@@ -2,6 +2,7 @@
 from logging import getLogger
 
 from django.core.exceptions import PermissionDenied
+from django.core.files.uploadedfile import UploadedFile
 from django.utils.timezone import now
 
 from ..models import PmtMethod, Subscription, Transaction
@@ -19,9 +20,10 @@ class Deposit:
         self._transaction = transaction
         self._slot_qs = subscription.transaction_set.filter(method=PmtMethod.DEPOSIT, filled_at__isnull=True)
 
-    def got_file(self, file):
+    def got_file(self, file: UploadedFile):
+        log.debug('Got file: %s', repr(file))
         self.transaction.document = file.read()
-        self.transaction.mimetype = file.mimetype
+        self.transaction.mimetype = file.content_type or 'application/octet-stream'
         self.transaction.filled_at = now()
         self.transaction.save()
 
