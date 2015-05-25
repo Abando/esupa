@@ -93,6 +93,7 @@ def view_subscribe(request: HttpRequest, eslug=None) -> HttpResponse:
     # deal with payment related stuff
     context['documents'] = subscription.transaction_set.filter(filled_at__isnull=False).values(
         'id', 'filled_at', 'ended_at', 'accepted')
+    state = subscription.state  # time to refresh this information!
     if SubsState.ACCEPTABLE <= state <= SubsState.VERIFYING_PAY and (event.sales_open or subscription.waiting):
         deposit = Deposit(subscription=subscription)
         if action.startswith('pay'):
