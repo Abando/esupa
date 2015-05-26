@@ -27,18 +27,19 @@ Contribution guidelines
 -----------------------
 
 - Just submit one of the roadmap features as a pull request.
-    - Follow PEP-8_ and PEP-20_ and you're golden.
-    - Eventually I'll also abide to PEP-257_ too, in which case so must pull requests.
+  - Follow PEP-8_ and PEP-20_ and you're golden.
+  - Eventually I'll also abide to PEP-257_ too, in which case so must pull requests.
 - Roadmap:
-    - Add support for PayPal_, then maybe some others like Payza_, BCash_, Moip_.
-    - Split edit and view mode templates in the subscription view.
-    - Have each Event have its own staff list, deal with permissions based on that. Some with read permissions only.
-    - Add support for partial payments. Let people have their own installments or split among different processors.
-        - These people's reservations will last proportionately to the amount they've paid.
+  - Add support for PayPal_, then maybe some others like Payza_, BCash_, Moip_.
+  - Internationalization and localization (i18n and l10n if you must).
+  - Split edit and view mode templates in the subscription view.
+  - Have each Event have its own staff list, deal with permissions based on that. Some with read permissions only.
+  - Add support for partial payments. Let people have their own installments or split among different processors.
+    - These people's reservations should last proportionately to the amount they've paid.
 
-.. _PEP-8:: https://www.python.org/dev/peps/pep-0008/
-.. _PEP-20:: https://www.python.org/dev/peps/pep-0020/
-.. _PEP-257:: https://www.python.org/dev/peps/pep-0257/
+.. _PEP-8: https://www.python.org/dev/peps/pep-0008/
+.. _PEP-20: https://www.python.org/dev/peps/pep-0020/
+.. _PEP-257: https://www.python.org/dev/peps/pep-0257/
 .. _PayPal: https://www.paypal.com/
 .. _Payza: https://www.payza.com/
 .. _BCash: https://www.bcash.com.br/
@@ -47,6 +48,6 @@ Contribution guidelines
 Authors
 -------
 
-At the moment it's all by @ekevoo,
-but heavily based on plenty of discussions and advice from @whiteraccoon,
+At the moment it's all by Ekevoo,
+but heavily based on plenty of discussions and advice from WhiteRaccoon,
 who really helped mature the ideas while working hard at the PHP predecessor of this.
