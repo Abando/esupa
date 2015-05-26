@@ -19,7 +19,7 @@ from .queue import QueueAgent, cron
 log = getLogger(__name__)
 
 
-def get_event(slug=None) -> Event:
+def _get_event(slug=None) -> Event:
     """Takes given event or first set in the future."""
     if slug:
         try:
@@ -34,7 +34,7 @@ def get_event(slug=None) -> Event:
             raise Http404("No default event.")
 
 
-def get_subscription(event: Event, user: User) -> Subscription:
+def _get_subscription(event: Event, user: User) -> Subscription:
     """Takes existing subscription if available, creates a new one otherwise."""
     queryset = Subscription.objects
     queryset = queryset.filter(event=event, user=user)
@@ -45,9 +45,9 @@ def get_subscription(event: Event, user: User) -> Subscription:
 
 
 @login_required
-def view_subscribe(request: HttpRequest, eslug=None) -> HttpResponse:
-    event = get_event(eslug)
-    subscription = get_subscription(event, request.user)
+def subscribe(request: HttpRequest, slug=None) -> HttpResponse:
+    event = _get_event(slug)
+    subscription = _get_subscription(event, request.user)
     action = request.POST.get('action', default='view')
     state = subscription.state
     queue = QueueAgent(subscription)
@@ -124,7 +124,7 @@ def view_subscribe(request: HttpRequest, eslug=None) -> HttpResponse:
 
 
 @login_required
-def view_transaction_document(request: HttpRequest, tid) -> HttpResponse:
+def transaction_document(request: HttpRequest, tid) -> HttpResponse:
     # Add ETag generation & verification… maybe… eventually…
     trans = Transaction.objects.get(id=tid)
     if trans is None or not trans.document:
@@ -135,7 +135,7 @@ def view_transaction_document(request: HttpRequest, tid) -> HttpResponse:
     return response
 
 
-def view_cron(_, secret) -> HttpResponse:
+def cron(_, secret) -> HttpResponse:
     if secret != settings.ESUPA_CRON_SECRET:
         raise SuspiciousOperation
     cron()
@@ -143,19 +143,19 @@ def view_cron(_, secret) -> HttpResponse:
 
 
 @csrf_exempt
-def view_processor(request: HttpRequest, slug) -> HttpResponse:
+def processor(request: HttpRequest, slug) -> HttpResponse:
     return Processor.dispatch_view(slug, request) or HttpResponse()
 
 
 @login_required  # TODO: @permission_required(???)
-def view_verify(request: HttpRequest) -> HttpResponse:
+def verify(request: HttpRequest) -> HttpResponse:
     if not request.user.is_staff:
         raise PermissionDenied
     return render(request, 'esupa/verify.html', {'events': Event.objects})
 
 
 @login_required
-def view_verify_event(request: HttpRequest, eid) -> HttpResponse:
+def verify_event(request: HttpRequest, eid) -> HttpResponse:
     if not request.user.is_staff:
         raise PermissionDenied
     event = Event.objects.get(id=int(eid))
