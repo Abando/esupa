@@ -27,14 +27,18 @@ Contribution guidelines
 -----------------------
 
 - Just submit one of the roadmap features as a pull request.
+
   - Follow PEP-8_ and PEP-20_ and you're golden.
   - Eventually I'll also abide to PEP-257_ too, in which case so must pull requests.
+
 - Roadmap:
+
   - Add support for PayPal_, then maybe some others like Payza_, BCash_, Moip_.
   - Internationalization and localization (i18n and l10n if you must).
   - Split edit and view mode templates in the subscription view.
   - Have each Event have its own staff list, deal with permissions based on that. Some with read permissions only.
   - Add support for partial payments. Let people have their own installments or split among different processors.
+
     - These people's reservations should last proportionately to the amount they've paid.
 
 .. _PEP-8: https://www.python.org/dev/peps/pep-0008/
