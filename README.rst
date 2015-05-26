@@ -1,13 +1,17 @@
 Esupa
 =====
 
-Esupa stands for **Event Subscription and Payment**,
-and it's meant to handle collection of attendee data and payment
+Esupa is a free software `licensed under the Apache License`_
+meant to handle collection of attendee data and payment
 for events that are just big enough for Google Forms and manual deposits being insufficient.
 
 It's created for Abando_, an annual event in Brazil, but I hope this can be universally useful.
 
+The name stands for **Event Subscription and Payment**.
+
+.. _licensed under the Apache License: LICENSE.rst
 .. _Abando: http://www.abando.com.br/
+
 
 Prerequisites
 -------------
