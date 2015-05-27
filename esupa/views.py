@@ -147,7 +147,7 @@ def transaction_document(request: HttpRequest, tid) -> HttpResponse:
     return response
 
 
-def cron(_, secret) -> HttpResponse:
+def cron_view(_, secret) -> HttpResponse:
     if secret != settings.ESUPA_CRON_SECRET:
         raise SuspiciousOperation
     cron()
@@ -159,7 +159,7 @@ def processor(request: HttpRequest, slug) -> HttpResponse:
     return Processor.dispatch_view(slug, request) or HttpResponse()
 
 
-@login_required  # TODO: @permission_required(???)
+@login_required
 def verify(request: HttpRequest) -> HttpResponse:
     if not request.user.is_staff:
         raise PermissionDenied
