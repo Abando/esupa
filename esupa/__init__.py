@@ -13,10 +13,15 @@
 #
 from django.apps import AppConfig
 
+from .payment import Payment
+
 
 class EsupaApp(AppConfig):
     name = __name__
     verbose_name = 'Event Subscription and Payment'
+
+    def ready(self):
+        Payment.static_init()
 
 
 default_app_config = __name__ + '.EsupaApp'

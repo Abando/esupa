@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and limitations under the License.
 #
 from logging import getLogger
+from pkgutil import iter_modules
 
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
@@ -20,10 +21,39 @@ from django.http import HttpResponseBadRequest
 from ..models import PmtMethod
 from .deposit import Deposit
 
-logger = getLogger(__name__)
+log = getLogger(__name__)
 
 
-class Processor:
+class Payment:
+    _payment_methods = {}
+
+    payment_method_code = 0
+    slug = ''
+
+    @classmethod
+    def static_init(cls):
+        if cls._payment_methods:
+            return  # avoid double run
+        for importer, modname, ispkg in iter_modules(__path__, __name__ + '.'):
+            print('Found submodule %s; importer %s' % (modname, importer))
+            try:
+                module = importer.load_module(modname)
+                log.info('Imported payment module: %s', modname)
+                if hasattr(module, 'PaymentMethod'):
+                    cls._payment_methods[modname] = module.PaymentMethod
+                    assert issubclass(module.PaymentMethod, Payment)
+                else:
+                    log.warn('Missing class PaymentMethod in module.')
+            except ImportError:
+                log.warn('Failed to import payment module: %s', modname)
+
+    @classmethod
+    def get(cls, slug: str) -> 'Payment':
+        log.warn(slug)
+        return Payment()
+
+
+class ProcessorBase(Payment):
     _initialized = False
     _processors = {}
     slug = None
