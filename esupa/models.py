@@ -54,17 +54,6 @@ class Enum:
         return '%s(%d)' % (str(type(self)), self._value)
 
 
-class PmtMethod(Enum):
-    CASH = 0
-    DEPOSIT = 1
-    PAGSEGURO = 2
-    choices = (
-        (CASH, 'Em Mãos'),
-        (DEPOSIT, 'Depósito'),
-        (PAGSEGURO, 'PagSeguro'),
-    )
-
-
 class SubsState(Enum):
     NEW = 0
     ACCEPTABLE = 11

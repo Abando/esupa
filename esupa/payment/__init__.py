@@ -14,81 +14,90 @@
 from logging import getLogger
 from pkgutil import iter_modules
 
-from django.conf import settings
-from django.core.exceptions import PermissionDenied
-from django.http import HttpResponseBadRequest
+from django.http import HttpResponse, HttpRequest
 
-from ..models import PmtMethod
-from .deposit import Deposit
+from ..models import Transaction, Subscription
 
 log = getLogger(__name__)
 
+_implementation_by_slug = {}
+_implementation_by_code = {}
+_subclasses_loaded = False
 
-class Payment:
-    _payment_methods = {}
+
+class PaymentBase:
+    _subscription = None
+    _transaction = None
 
     payment_method_code = 0
-    slug = ''
+    slug = None
 
-    @classmethod
-    def static_init(cls):
-        if cls._payment_methods:
+    @staticmethod
+    def static_init():
+        if _subclasses_loaded:
             return  # avoid double run
         for importer, modname, ispkg in iter_modules(__path__, __name__ + '.'):
             print('Found submodule %s; importer %s' % (modname, importer))
             try:
                 module = importer.load_module(modname)
-                log.info('Imported payment module: %s', modname)
-                if hasattr(module, 'PaymentMethod'):
-                    cls._payment_methods[modname] = module.PaymentMethod
-                    assert issubclass(module.PaymentMethod, Payment)
+                log.debug('Imported payment module: %s', modname)
+                if hasattr(module, 'Payment'):
+                    subclass = module.Payment
+                    assert issubclass(subclass, PaymentBase)
+                    if not subclass.slug:
+                        subclass.slug = modname
+                    _implementation_by_slug[subclass.slug] = subclass
+                    _implementation_by_code[subclass.payment_method_code] = subclass
+                    log.info('Loaded payment module #%d, slug=%s', subclass.payment_method_code, subclass.slug)
                 else:
-                    log.warn('Missing class PaymentMethod in module.')
+                    log.warn('Missing class Payment in module: %s', modname)
             except ImportError:
                 log.warn('Failed to import payment module: %s', modname)
 
-    @classmethod
-    def get(cls, slug: str) -> 'Payment':
-        log.warn(slug)
-        return Payment()
+    @staticmethod
+    def get(slug: str) -> 'PaymentBase':
+        return _implementation_by_slug[slug]
 
+    @property
+    def transaction(self) -> Transaction:
+        if self._transaction is None:
+            self._transaction = Transaction(subscription=self._subscription, method=self.payment_method_code)
+        return self._transaction
 
-class ProcessorBase(Payment):
-    _initialized = False
-    _processors = {}
-    slug = None
-
-    @classmethod
-    def static_init(cls):
-        if not cls._initialized:
-            if hasattr(settings, 'PAGSEGURO_EMAIL'):
-                from .pagseguro import PagSeguroProcessor
-
-                PagSeguroProcessor.static_init()
-                cls._processors[PagSeguroProcessor.slug] = PagSeguroProcessor
-            cls._initialized = True
-
-    @classmethod
-    def get(cls, subscription):
-        cls.static_init()
-        if not subscription.id:
-            raise PermissionDenied('Payment without subscription.')
-        tset = subscription.transaction_set
-        transaction = tset.filter(method=PmtMethod.PAGSEGURO, filled_at__isnull=True).first() or \
-            tset.create(subscription=subscription, value=subscription.price, method=PmtMethod.PAGSEGURO)
-        processor_slug = 'pagseguro'  # TODO: add a selector, somehow (no idea how)
-        processors = cls._processors
-        processor = processors[processor_slug]
-        return processor(transaction)
-
-    @classmethod
-    def dispatch_view(cls, slug, request):
-        cls.static_init()
-        processor = cls._processors.get(slug)
-        if issubclass(processor, cls):
-            return processor.view(request)
+    @transaction.setter
+    def transaction(self, value):
+        if isinstance(value, Transaction):
+            self._transaction = value
+        elif value:
+            self._transaction = Transaction.objects.get(id=int(value))
         else:
-            return HttpResponseBadRequest()
+            self._transaction = None
+        if self._transaction:
+            self._subscription = self._transaction.subscription
 
-    def generate_transaction_url(self):
-        raise NotImplementedError()
+    @property
+    def subscription(self) -> Subscription:
+        return self._subscription
+
+    @subscription.setter
+    def subscription(self, value):
+        if isinstance(value, Subscription):
+            self._subscription = value
+        elif value:
+            self._subscription = Subscription.objects.get(id=int(value))
+        else:
+            self._subscription = None
+            self._transaction = None
+        if self._subscription and self._transaction:
+            if not self._transaction.id:
+                self._transaction.subscription = self._subscription
+            else:
+                raise ValueError('Invalid change of subscription with saved transaction. tid=%d, sid=%d' %
+                                 (self._transaction.id, self._subscription.id))
+
+    def start_payment(self, amount):
+        raise NotImplementedError
+
+    @classmethod
+    def callback_view(cls, request: HttpRequest) -> HttpResponse:
+        raise NotImplementedError
