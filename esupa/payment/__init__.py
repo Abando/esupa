@@ -84,7 +84,7 @@ class PaymentBase:
     @property
     def transaction(self) -> Transaction:
         if self._transaction is None:
-            self._transaction = Transaction(subscription=self._subscription, method=self.payment_method_code)
+            self._transaction = Transaction(subscription=self._subscription, method=self.meta.code)
         return self._transaction
 
     @transaction.setter
@@ -122,8 +122,5 @@ class PaymentBase:
         raise NotImplementedError
 
     @classmethod
-    def locate_payment(cls, request: HttpRequest) -> 'PaymentBase':
-        raise NotImplementedError
-
-    def callback_view(self, request: HttpRequest) -> HttpResponse:
+    def class_view(cls, request: HttpRequest) -> 'PaymentBase':
         raise NotImplementedError

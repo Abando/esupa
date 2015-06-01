@@ -33,27 +33,24 @@ class Payment(PaymentBase):
         title='Depósito Bancário',
     )
 
-    payment_method_code = 1
-    slug = 'deposit'
-
     def start_payment(self, amount):
         return DepositForm(self.transaction, amount)
 
     @classmethod
-    def locate_payment(cls, request: HttpRequest) -> 'Payment':
+    def class_view(cls, request: HttpRequest) -> HttpResponse:
         if not request.user or 'tid' not in request.POST:
             raise PermissionDenied
         transaction = Transaction.objects.get(id=int(request.POST['tid']))
         if transaction.subscription.user != request.user:
             raise SuspiciousOperation
         else:
-            return Payment(transaction=transaction)
+            return Payment(transaction=transaction).callback_view(request.FILES)
 
-    def callback_view(self, request: HttpRequest) -> HttpResponse:
-        if 'upload' in request.FILES:
-            file = request.FILES['upload']
-            self.transaction.document = file.read()
-            self.transaction.mimetype = file.content_type or 'application/octet-stream'
+    def callback_view(self, files: dict) -> HttpResponse:
+        if 'upload' in files:
+            upload = files['upload']
+            self.transaction.document = upload.read()
+            self.transaction.mimetype = upload.content_type or 'application/octet-stream'
             self.transaction.filled_at = now()
             self.transaction.save()
         else:
