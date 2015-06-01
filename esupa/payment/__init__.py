@@ -14,9 +14,10 @@
 from logging import getLogger
 from pkgutil import iter_modules
 
+from django.core.exceptions import SuspiciousOperation
 from django.http import HttpResponse, HttpRequest
 
-from ..models import Transaction, Subscription
+from ..models import Transaction, Subscription, payment_names
 
 log = getLogger(__name__)
 
@@ -25,12 +26,18 @@ _implementation_by_code = {}
 _subclasses_loaded = False
 
 
+class PaymentMethodMeta:
+    def __init__(self, code: int, slug: str, title: str):
+        self.code = code
+        self.slug = slug
+        self.title = title
+
+
 class PaymentBase:
     _subscription = None
     _transaction = None
 
-    payment_method_code = 0
-    slug = None
+    meta = PaymentMethodMeta(0, '', '')
 
     @staticmethod
     def static_init():
@@ -43,12 +50,14 @@ class PaymentBase:
                 log.debug('Imported payment module: %s', modname)
                 if hasattr(module, 'Payment'):
                     subclass = module.Payment
-                    assert issubclass(subclass, PaymentBase)
-                    if not subclass.slug:
-                        subclass.slug = modname
-                    _implementation_by_slug[subclass.slug] = subclass
-                    _implementation_by_code[subclass.payment_method_code] = subclass
-                    log.info('Loaded payment module #%d, slug=%s', subclass.payment_method_code, subclass.slug)
+                    meta = subclass.meta
+                    assert isinstance(meta, PaymentMethodMeta)
+                    if not meta.slug:
+                        meta.slug = modname
+                    _implementation_by_slug[meta.slug] = subclass
+                    _implementation_by_code[meta.code] = subclass
+                    payment_names[meta.code] = meta.title
+                    log.info('Loaded payment module #%d, slug=%s, title=%s', meta.code, meta.slug, meta.title)
                 else:
                     log.warn('Missing class Payment in module: %s', modname)
             except ImportError:
@@ -57,6 +66,20 @@ class PaymentBase:
     @staticmethod
     def get(slug: str) -> 'PaymentBase':
         return _implementation_by_slug[slug]
+
+    def __init__(self, subscription: Subscription=None, transaction: Transaction=None):
+        if not subscription and not transaction:
+            pass  # nothing to do
+        elif subscription and not transaction:
+            self.subscription = subscription
+        elif transaction and not subscription:
+            self.transaction = transaction
+        else:
+            if transaction.subscription is None:
+                transaction.subscription = subscription
+            elif transaction.subscription != subscription:
+                raise SuspiciousOperation
+            self.transaction = transaction
 
     @property
     def transaction(self) -> Transaction:
@@ -99,5 +122,8 @@ class PaymentBase:
         raise NotImplementedError
 
     @classmethod
-    def callback_view(cls, request: HttpRequest) -> HttpResponse:
+    def locate_payment(cls, request: HttpRequest) -> 'PaymentBase':
+        raise NotImplementedError
+
+    def callback_view(self, request: HttpRequest) -> HttpResponse:
         raise NotImplementedError

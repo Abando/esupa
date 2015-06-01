@@ -21,6 +21,7 @@ from django.utils.timezone import now
 
 log = getLogger(__name__)
 PriceField = lambda: models.DecimalField(max_digits=7, decimal_places=2)
+payment_names = {}
 
 
 class Enum:
@@ -190,7 +191,7 @@ class Transaction(models.Model):
     payee = models.CharField(max_length=10, blank=True)
     value = PriceField()
     created_at = models.DateTimeField(auto_now=True)
-    method = PmtMethod.field(default=PmtMethod.CASH)
+    method = models.SmallIntegerField(default=0)
     remote_identifier = models.CharField(max_length=50, blank=True)
     mimetype = models.CharField(max_length=255, blank=True)
     document = models.BinaryField(null=True)
@@ -201,9 +202,11 @@ class Transaction(models.Model):
     ended_at = models.DateTimeField(null=True, blank=True)
 
     def end(self, sucessfully) -> bool:
-        """Closes a transaction, and will propagate the appropriate changes to the belonging subscription.
+        """
+        Closes a transaction, and will propagate the appropriate changes to the belonging subscription.
 
-        :return bool: Whether the state of the subscription was changed."""
+        :return bool: Whether the state of the subscription was changed.
+        """
         self.accepted = sucessfully
         if not self.ended_at:
             self.ended_at = now()
@@ -230,4 +233,4 @@ class Transaction(models.Model):
 
     @property
     def str_method(self):
-        return str(PmtMethod(self.method))
+        return payment_names.get(self.method)

@@ -21,7 +21,7 @@ from pagseguro.api import PagSeguroApi, PagSeguroItem
 from pagseguro.settings import TRANSACTION_STATUS
 from pagseguro.signals import notificacao_recebida
 
-from . import Processor
+from . import PaymentBase, PaymentMethodMeta
 from ..models import SubsState, Transaction
 from ..notify import Notifier
 from ..queue import QueueAgent
@@ -29,8 +29,12 @@ from ..queue import QueueAgent
 log = getLogger(__name__)
 
 
-class PagSeguroProcessor(Processor):
-    slug = 'pagseguro'
+class PagSeguroProcessor(PaymentBase):
+    meta = PaymentMethodMeta(
+        code=2,
+        slug='pagseguro',
+        title='PagSeguro',
+    )
 
     @classmethod
     def static_init(cls):
@@ -46,9 +50,6 @@ class PagSeguroProcessor(Processor):
         tid = int(transaction['reference'])
         esupa_transaction = Transaction.objects.get(id=tid)
         PagSeguroProcessor(esupa_transaction).handle_notification(transaction)
-
-    def __init__(self, transaction: Transaction):
-        self.t = transaction
 
     def generate_transaction_url(self) -> str:
         event = self.t.subscription.event
