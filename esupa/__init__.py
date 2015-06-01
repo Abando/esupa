@@ -13,7 +13,7 @@
 #
 from django.apps import AppConfig
 
-from .payment import Payment
+from .payment import load_submodules
 
 
 class EsupaApp(AppConfig):
@@ -21,7 +21,7 @@ class EsupaApp(AppConfig):
     verbose_name = 'Event Subscription and Payment'
 
     def ready(self):
-        Payment.static_init()
+        load_submodules()
 
 
 default_app_config = __name__ + '.EsupaApp'

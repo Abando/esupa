@@ -25,7 +25,7 @@ from django.views.decorators.csrf import csrf_exempt
 from .forms import SubscriptionForm, UploadForm
 from .models import Event, Subscription, SubsState, Transaction, PmtMethod
 from .notify import Notifier
-from .payment import Deposit, Processor
+from .payment import Deposit, Processor, get_payment
 from .queue import QueueAgent, cron
 
 log = getLogger(__name__)
@@ -55,6 +55,22 @@ def _get_subscription(event: Event, user: User) -> Subscription:
         result = Subscription(event=event, user=user)
     return result
 
+
+@login_required
+def view_or_edit(request: HttpRequest, slug=None) -> HttpResponse:
+    pass
+
+@login_required
+def edit(request: HttpRequest, slug=None) -> HttpResponse:
+    pass
+
+@login_required
+def view(request: HttpRequest, slug=None) -> HttpResponse:
+    pass
+
+@login_required
+def pay(request: HttpRequest, slug=None) -> HttpResponse:
+    pass
 
 @login_required
 def subscribe(request: HttpRequest, slug=None) -> HttpResponse:
@@ -155,8 +171,9 @@ def cron_view(_, secret) -> HttpResponse:
 
 
 @csrf_exempt
-def processor(request: HttpRequest, slug) -> HttpResponse:
-    return Processor.dispatch_view(slug, request) or HttpResponse()
+def paying(request: HttpRequest, slug) -> HttpResponse:
+    payment = get_payment(slug)
+    return payment.class_view(request) or HttpResponse()
 
 
 @login_required

@@ -23,7 +23,8 @@ log = getLogger(__name__)
 
 _implementation_by_slug = {}
 _implementation_by_code = {}
-_subclasses_loaded = False
+
+get_payment = _implementation_by_slug.get
 
 
 class PaymentMethodMeta:
@@ -33,39 +34,35 @@ class PaymentMethodMeta:
         self.title = title
 
 
+def load_submodules():
+    if not _implementation_by_code:
+        return
+    for importer, modname, ispkg in iter_modules(__path__, __name__ + '.'):
+        print('Found submodule %s; importer %s' % (modname, importer))
+        try:
+            module = importer.load_module(modname)
+            log.debug('Imported payment module: %s', modname)
+            if hasattr(module, 'Payment'):
+                subclass = module.Payment
+                meta = subclass.meta
+                assert isinstance(meta, PaymentMethodMeta)
+                if not meta.slug:
+                    meta.slug = modname
+                _implementation_by_slug[meta.slug] = subclass
+                _implementation_by_code[meta.code] = subclass
+                payment_names[meta.code] = meta.title
+                log.info('Loaded payment module #%d, slug=%s, title=%s', meta.code, meta.slug, meta.title)
+            else:
+                log.warn('Missing class Payment in module: %s', modname)
+        except ImportError:
+            log.warn('Failed to import payment module: %s', modname)
+
+
 class PaymentBase:
     _subscription = None
     _transaction = None
 
     meta = PaymentMethodMeta(0, '', '')
-
-    @staticmethod
-    def static_init():
-        if _subclasses_loaded:
-            return  # avoid double run
-        for importer, modname, ispkg in iter_modules(__path__, __name__ + '.'):
-            print('Found submodule %s; importer %s' % (modname, importer))
-            try:
-                module = importer.load_module(modname)
-                log.debug('Imported payment module: %s', modname)
-                if hasattr(module, 'Payment'):
-                    subclass = module.Payment
-                    meta = subclass.meta
-                    assert isinstance(meta, PaymentMethodMeta)
-                    if not meta.slug:
-                        meta.slug = modname
-                    _implementation_by_slug[meta.slug] = subclass
-                    _implementation_by_code[meta.code] = subclass
-                    payment_names[meta.code] = meta.title
-                    log.info('Loaded payment module #%d, slug=%s, title=%s', meta.code, meta.slug, meta.title)
-                else:
-                    log.warn('Missing class Payment in module: %s', modname)
-            except ImportError:
-                log.warn('Failed to import payment module: %s', modname)
-
-    @staticmethod
-    def get(slug: str) -> 'PaymentBase':
-        return _implementation_by_slug[slug]
 
     def __init__(self, subscription: Subscription=None, transaction: Transaction=None):
         if not subscription and not transaction:
@@ -122,5 +119,5 @@ class PaymentBase:
         raise NotImplementedError
 
     @classmethod
-    def class_view(cls, request: HttpRequest) -> 'PaymentBase':
+    def class_view(cls, request: HttpRequest) -> HttpResponse:
         raise NotImplementedError

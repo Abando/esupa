@@ -54,7 +54,7 @@ class Payment(PaymentBase):
             self.transaction.filled_at = now()
             self.transaction.save()
         else:
-            redirect(reverse('esupa-subscribe'))
+            redirect(reverse('esupa-pay', args=[self.subscription.event.slug]))
 
 
 class DepositForm(forms.Form):

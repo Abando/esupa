@@ -44,7 +44,7 @@ class Payment(PaymentBase):
         event = self.subscription.event
         api = PagSeguroApi()
         api.params['reference'] = self.transaction.id
-        api.params['notificationURL'] = settings.BASE_PUBLIC_URI + reverse('esupa-processor', args=['pagseguro'])
+        api.params['notificationURL'] = settings.BASE_PUBLIC_URI + reverse('esupa-paying', args=['pagseguro'])
         log.debug('Set notification URI: %s', api.params['notificationURL'])
         api.add_item(PagSeguroItem(id=self.transaction.id, description=event.name, amount=amount, quantity=1))
         data = api.checkout()
@@ -55,7 +55,7 @@ class Payment(PaymentBase):
             raise ValueError('PagSeguro denied pay. %s' % repr(data))
 
     @classmethod
-    def class_view(cls, request: HttpRequest) -> HttpResponse:
+    def class_view(cls, request: HttpRequest):
         notification_code = request.POST.get('notificationCode', None)
         notification_type = request.POST.get('notificationType', None)
         if notification_code and notification_type == 'transaction':
@@ -63,9 +63,9 @@ class Payment(PaymentBase):
             tid = int(data['reference'])
             transaction = Transaction.objects.get(id=tid)
             payment = Payment(transaction=transaction)
-            return payment.callback_view(data)
+            payment.callback_view(data)
 
-    def callback_view(self, data: dict) -> HttpResponse:
+    def callback_view(self, data: dict):
         try:
             self.transaction.remote_identifier = data['code']
             self.transaction.notes += '\n[%s] %s %s' % (data['lastEventDate'], data['code'], data['status'])
@@ -73,7 +73,6 @@ class Payment(PaymentBase):
             notify = Notifier(self.subscription)
             status = TRANSACTION_STATUS[data['status']]
             self.status_callback[status](self, status=status, queue=queue, notify=notify)
-            return HttpResponse()
         finally:
             # No rollbacks please!
             self.transaction.save()
