@@ -16,7 +16,7 @@ from logging import getLogger
 # sudo -H pip3 install django-pagseguro2
 from django.conf import settings
 from django.core.urlresolvers import reverse
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest
 from django.shortcuts import redirect
 from pagseguro.api import PagSeguroApi, PagSeguroItem
 from pagseguro.settings import TRANSACTION_STATUS
@@ -79,26 +79,26 @@ class Payment(PaymentBase):
             self.subscription.save()
 
     @CallbackDictionary
-    def status_callback(self, **kwargs):
-        raise ValueError('Unknown PagSeguro status code: %s' % kwargs['status'])
+    def status_callback(self, status: str, **_):
+        raise ValueError('Unknown PagSeguro status code: %s' % status)
 
     @status_callback.register('aguardando', 'em_analise')
-    def status_callback(self, **kwargs):
+    def status_callback(self, queue: QueueAgent, **_):
         # This bit of logic is not strictly needed. I'm just making sure data is still sane.
         # 'em_analise' means PagSeguro is verifying pay, not esupa staff users, so we just keep waiting.
         self.subscription.raise_state(SubsState.EXPECTING_PAY)
         self.transaction.ended = False
-        self.subscription.position = kwargs['queue'].add()
+        self.subscription.position = queue.add()
         self.subscription.waiting = False  # reset wait
         self.subscription.waiting = True
 
     @status_callback.register('pago', 'disponivel')
-    def status_callback(self, **kwargs):
+    def status_callback(self, queue: QueueAgent, notify: Notifier, **_):
         # Escrow starts at 'pago' and ends at 'disponivel'. We'll assume that it will always complete
         # sucessfully because we're optimistic like that. See the dispute section.
         if self.transaction.end(sucessfully=True):
-            self.subscription.position = kwargs['queue'].add()
-            kwargs['notify'].confirmed()
+            self.subscription.position = queue.add()
+            notify.confirmed()
 
     @status_callback.register('em_disputa')
     def status_callback(self, **_):
@@ -112,12 +112,12 @@ class Payment(PaymentBase):
         # pay.queue.remove(); subscription.position = queue.add()  # unsure if necessary
 
     @status_callback.register('devolvido', 'cancelado')
-    def status_callback(self, **kwargs):
+    def status_callback(self, queue: QueueAgent, notify: Notifier, **_):
         # We have to be careful here wether we have other pending transactions. So we'll first close this
         # transaction, then peek other transactions before making any changes to the subscription.
         if self.transaction.end(sucessfully=False):
-            kwargs['queue'].remove()
-            kwargs['notify'].pay_denied()
+            queue.remove()
+            notify.pay_denied()
 
 
 class CallbackDictionary(dict):
