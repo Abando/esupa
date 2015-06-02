@@ -20,17 +20,15 @@ from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect
 from django.utils.timezone import now
 
-from . import PaymentBase, PaymentMethodMeta
-from ..models import Transaction
+from . import PaymentBase
+from ..models import Transaction, SubsState
 
 log = getLogger(__name__)
 
 
 class Payment(PaymentBase):
-    meta = PaymentMethodMeta(
-        code=1,
-        title='Depósito Bancário',
-    )
+    CODE = 1
+    TITLE = 'Depósito Bancário'
 
     def start_payment(self, amount):
         return DepositForm(self.transaction, amount)
@@ -42,18 +40,22 @@ class Payment(PaymentBase):
         transaction = Transaction.objects.get(id=int(request.POST['tid']))
         if transaction.subscription.user != request.user:
             raise SuspiciousOperation
+        elif 'upload' in request.FILES:
+            if transaction.subscription.state == SubsState.QUEUED_FOR_PAY:
+                raise PermissionDenied
+            cls.put_file(transaction, request.FILES['upload'])
+            return redirect(reverse('esupa-view', args=(transaction.subscription.event.slug,)))
         else:
-            return Payment(transaction=transaction).callback_view(request.FILES)
+            return DepositForm(transaction, data=request.POST, files=request.FILES)
 
-    def callback_view(self, files: dict) -> HttpResponse:
-        if 'upload' in files:
-            upload = files['upload']
-            self.transaction.document = upload.read()
-            self.transaction.mimetype = upload.content_type or 'application/octet-stream'
-            self.transaction.filled_at = now()
-            self.transaction.save()
-        else:
-            redirect(reverse('esupa-pay', args=[self.subscription.event.slug]))
+    @staticmethod
+    def put_file(transaction: Transaction, upload):
+        transaction.document = upload.read()
+        transaction.mimetype = upload.content_type or 'application/octet-stream'
+        transaction.filled_at = now()
+        transaction.save()
+        transaction.subscription.raise_state(SubsState.VERIFYING_PAY)
+        transaction.subscription.save()
 
 
 class DepositForm(forms.Form):
@@ -61,11 +63,12 @@ class DepositForm(forms.Form):
     amount = forms.DecimalField(label='Valor depositado', max_digits=7, decimal_places=2)
     upload = forms.FileField(label='Comprovante')
 
-    def __init__(self, transaction: Transaction, amount, *args, **kwargs):
+    def __init__(self, transaction: Transaction, amount=None, *args, **kwargs):
         forms.Form.__init__(self, *args, **kwargs)
         subscription = transaction.subscription
         fmt = 'Deposite até R$ %s na conta abaixo e envie foto ou scan do comprovante.\n%s'
         msg = fmt % (subscription.price, subscription.event.deposit_info)
         self.fields['upload'].help_text = msg.replace('\n', '\n<br/>')
-        self.fields['amount'].value = amount
+        if amount:
+            self.fields['amount'].value = amount
         self.fields['tid'].value = transaction.id

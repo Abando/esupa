@@ -17,13 +17,15 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied, SuspiciousOperation
+from django.core.urlresolvers import reverse
+from django.forms import Form
 from django.http import HttpResponse, Http404, HttpRequest, HttpResponseBadRequest
-from django.shortcuts import redirect, render
+from django.shortcuts import render
 from django.utils.timezone import now
 from django.views.decorators.csrf import csrf_exempt
 
 from .forms import SubscriptionForm
-from .models import Event, Subscription, SubsState, Transaction
+from .models import Event, Subscription, SubsState, Transaction, payment_names
 from .notify import Notifier
 from .payment import PaymentBase, get_payment
 from .queue import QueueAgent, cron
@@ -59,28 +61,42 @@ def _get_subscription(event_slug: str, user: User) -> Subscription:
 def view(request: HttpRequest, slug=None) -> HttpResponse:
     subscription = _get_subscription(slug, request.user)
     if subscription.id:
-        return render(request, 'esupa/view.html', {
+        context = {
             'subscription': subscription,
             'event': subscription.event,
             'state': SubsState(subscription.state),
-        })
+            'pay_buttons': payment_names,
+            'post_to': reverse('esupa-view', args=[slug]),
+        }
+        if 'pay_with' in request.POST:
+            payment = get_payment(int(request.POST['pay_with']))(subscription)
+            assert isinstance(payment, PaymentBase)
+            pay_info = payment.start_payment(subscription.price)
+            if isinstance(pay_info, Form):
+                context['pay_form'] = pay_info
+                context['post_to'] = reverse('esupa-pay', args=[payment.CODE])
+            elif isinstance(pay_info, HttpResponse):
+                return pay_info
+            else:
+                raise NotImplementedError  # I'm not sure what to do here...
+        return render(request, 'esupa/view.html', context)
     elif request.POST:
         # Avoid an infinite loop. We shouldn't be receiving a POST in this view without a preexisting Subscription.
         raise SuspiciousOperation
     else:
         return edit(request, slug)  # may call view()
 
+
 @login_required
 def edit(request: HttpRequest, slug=None) -> HttpResponse:
     subscription = _get_subscription(slug, request.user)
-    event = subscription.event
     if not subscription.id:
         subscription.email = subscription.user.email
     form = SubscriptionForm(data=request.POST or None, instance=subscription)
     if request.POST and form.is_valid() and SubsState.NEW <= subscription.state <= SubsState.QUEUED_FOR_PAY:
         form.save()
         s = map(str.lower, (subscription.full_name, subscription.email, subscription.document, subscription.badge))
-        b = tuple(map(str.lower, filter(bool, event.data_to_be_checked.splitlines())))
+        b = tuple(map(str.lower, filter(bool, subscription.event.data_to_be_checked.splitlines())))
         acceptable = True not in (t in d for d in s for t in b)
         subscription.state = SubsState.ACCEPTABLE if acceptable else SubsState.VERIFYING_DATA
         subscription.save()
@@ -90,61 +106,9 @@ def edit(request: HttpRequest, slug=None) -> HttpResponse:
     else:
         return render(request, 'esupa/edit.html', {
             'form': form,
-            'event': event,
+            'event': subscription.event,
             'subscription': subscription,
         })
-
-
-@login_required
-def pay(request: HttpRequest, slug=None) -> HttpResponse:
-    subscription = _get_subscription(slug, request.user)
-    event = subscription.event
-    action = request.POST.get('action', default='view')
-    state = subscription.state
-    queue = QueueAgent(subscription)
-    if action == 'pay_processor' and event.sales_open and queue.within_capacity:
-        return redirect(Processor.get(subscription).generate_transaction_url())
-    context['documents'] = subscription.transaction_set.filter(filled_at__isnull=False).values(
-        'id', 'filled_at', 'ended_at', 'accepted')
-    state = subscription.state  # time to refresh this information!
-    if SubsState.ACCEPTABLE <= state <= SubsState.VERIFYING_PAY and (event.sales_open or subscription.waiting):
-        deposit = Deposit(subscription=subscription)
-        if action.startswith('pay'):
-            subscription.position = queue.add()
-            subscription.waiting = queue.within_capacity
-            subscription.raise_state(SubsState.QUEUED_FOR_PAY if subscription.waiting else SubsState.EXPECTING_PAY)
-            if len(request.FILES):
-                deposit.got_file(request.FILES['upload'])
-                subscription.raise_state(SubsState.VERIFYING_PAY)
-                Notifier(subscription).staffer_action_required()
-            elif action == 'pay_deposit':
-                deposit.expecting_file = True
-            subscription.save()  # action=pay
-        if deposit.expecting_file:
-            context['upload_form'] = UploadForm(subscription)
-        if action != 'edit':
-            if state == SubsState.VERIFYING_PAY:
-                buttons.append(('pay_deposit', 'Enviar outro comprovante'))
-            elif queue.within_capacity:
-                buttons.append(('pay_deposit', 'Pagar com depósito bancário'))
-                buttons.append(('pay_processor', 'Pagar com PagSeguro'))
-            else:
-                buttons.append(('pay_none', 'Entrar na fila de pagamento'))
-
-
-@login_required
-def subscribe(request: HttpRequest, slug=None) -> HttpResponse:
-    subscription = _get_subscription(slug, request.user)
-    event = subscription.event
-    action = request.POST.get('action', default='view')
-    state = subscription.state
-    queue = QueueAgent(subscription)
-
-    # deal with payment related stuff
-
-    # ...whew.
-    context['state'] = SubsState(subscription.state)
-    return render(request, 'esupa/form.html', context)
 
 
 @login_required

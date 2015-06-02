@@ -21,7 +21,7 @@ from django.shortcuts import redirect
 from pagseguro.api import PagSeguroApi, PagSeguroItem
 from pagseguro.settings import TRANSACTION_STATUS
 
-from . import PaymentBase, PaymentMethodMeta
+from . import PaymentBase
 from ..models import SubsState, Transaction
 from ..notify import Notifier
 from ..queue import QueueAgent
@@ -30,10 +30,8 @@ log = getLogger(__name__)
 
 
 class Payment(PaymentBase):
-    meta = PaymentMethodMeta(
-        code=2,
-        title='PagSeguro',
-    )
+    CODE = 2
+    TITLE = 'PagSeguro'
 
     def __init__(self, data=None, **kwargs):
         PaymentBase.__init__(**kwargs)
