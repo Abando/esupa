@@ -87,9 +87,9 @@ class Event(models.Model):
     price = PriceField()
     capacity = models.IntegerField()
     subs_open = models.BooleanField(default=False)
-    subs_start_at = models.DateTimeField(null=True, blank=True)
+    subs_toggle = models.DateTimeField(null=True, blank=True)
     sales_open = models.BooleanField(default=False)
-    sales_start_at = models.DateTimeField(null=True, blank=True)
+    sales_toggle = models.DateTimeField(null=True, blank=True)
     deposit_info = models.TextField(blank=True)
     payment_wait_hours = models.IntegerField(default=48)
     data_to_be_checked = models.TextField(blank=True)
@@ -120,6 +120,14 @@ class Event(models.Model):
             return date(self.starts_at.year - self.min_age, self.starts_at.month, self.starts_at.day)
         else:
             return now().date()
+
+    def cron(self, present):
+        if self.subs_toggle and self.subs_toggle < present:
+            self.subs_toggle = None
+            self.subs_open = not self.subs_open
+        if self.sales_toggle and self.sales_toggle < present:
+            self.sales_toggle = None
+            self.sales_open = not self.sales_open
 
 
 class Optional(models.Model):

@@ -16,7 +16,7 @@ from logging import getLogger
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.core.exceptions import ObjectDoesNotExist, PermissionDenied, SuspiciousOperation
+from django.core.exceptions import PermissionDenied, SuspiciousOperation
 from django.http import HttpResponse, Http404, HttpRequest, HttpResponseBadRequest
 from django.shortcuts import redirect, render
 from django.utils.timezone import now
@@ -31,65 +31,46 @@ from .queue import QueueAgent, cron
 log = getLogger(__name__)
 
 
-def _get_event(slug=None) -> Event:
-    """Takes given event or first set in the future."""
-    if slug:
-        try:
-            return Event.objects.get(slug=slug)
-        except ObjectDoesNotExist:
-            raise Http404("No such event.")
-    else:
-        e = Event.objects.filter(starts_at__gt=now()).order_by('starts_at').first()
-        if e:
-            return e
-        else:
-            raise Http404("No default event.")
-
-
-def _get_subscription(event: Event, user: User) -> Subscription:
+def _get_subscription(event_slug: str, user: User) -> Subscription:
     """Takes existing subscription if available, creates a new one otherwise."""
+    if event_slug:
+        event = Event.objects.get(slug=event_slug)
+    else:
+        # find closest event in the future
+        event = Event.objects.filter(starts_at__gt=now()).order_by('starts_at').first()
+        if not event:
+            # find closest event in the past
+            event = Event.objects.filter(starts_at__lt=now()).order_by('-starts_at').first()
+        if not event:
+            raise Http404('There is no event. Create one in /admin/')
     queryset = Subscription.objects
     queryset = queryset.filter(event=event, user=user)
     result = queryset.first()
-    if result is None:
+    if not result:
         result = Subscription(event=event, user=user)
+    elif result.state == SubsState.DENIED:
+        raise PermissionDenied
     return result
 
 
 @login_required
 def view_or_edit(request: HttpRequest, slug=None) -> HttpResponse:
-    pass
+    subscription = _get_subscription(slug, request.user)
+    if subscription.id or not subscription.event.subs_open:
+        return view(request, slug)
+    else:
+        return edit(request, slug)
+
 
 @login_required
 def edit(request: HttpRequest, slug=None) -> HttpResponse:
-    pass
-
-@login_required
-def view(request: HttpRequest, slug=None) -> HttpResponse:
-    pass
-
-@login_required
-def pay(request: HttpRequest, slug=None) -> HttpResponse:
-    pass
-
-@login_required
-def subscribe(request: HttpRequest, slug=None) -> HttpResponse:
-    event = _get_event(slug)
-    subscription = _get_subscription(event, request.user)
-    action = request.POST.get('action', default='view')
+    subscription = _get_subscription(slug, request.user)
+    event = subscription.event
     state = subscription.state
     queue = QueueAgent(subscription)
-
-    # redirect away if appropriate
-    if action == 'pay_processor' and event.sales_open and queue.within_capacity:
-        return redirect(Processor.get(subscription).generate_transaction_url())
-    elif state == SubsState.DENIED:
-        raise PermissionDenied
-
-    # display subscription information
+    formdata = request.POST if request.method == 'POST' else None
     if not subscription.id:
         subscription.email = subscription.user.email
-    formdata = request.POST if request.method == 'POST' and action == 'save' else None
     form = SubscriptionForm(data=formdata, instance=subscription)
     buttons = []
     context = {
@@ -98,6 +79,7 @@ def subscribe(request: HttpRequest, slug=None) -> HttpResponse:
         'event': event,
         'subscription': subscription,
     }
+    # display subscription information
     if not event.subs_open:
         form.freeze()
     elif (action == 'view' and not subscription.id) or (action == 'edit') or (action == 'save' and form.errors):
@@ -106,6 +88,35 @@ def subscribe(request: HttpRequest, slug=None) -> HttpResponse:
         form.freeze()
         if SubsState.NEW <= state <= SubsState.QUEUED_FOR_PAY:
             buttons.append(('edit', 'Editar'))
+
+
+@login_required
+def view(request: HttpRequest, slug=None) -> HttpResponse:
+    subscription = _get_subscription(slug, request.user)
+    event = subscription.event
+    state = subscription.state
+    queue = QueueAgent(subscription)
+
+
+@login_required
+def pay(request: HttpRequest, slug=None) -> HttpResponse:
+    subscription = _get_subscription(slug, request.user)
+    event = subscription.event
+    action = request.POST.get('action', default='view')
+    state = subscription.state
+    queue = QueueAgent(subscription)
+    if action == 'pay_processor' and event.sales_open and queue.within_capacity:
+        return redirect(Processor.get(subscription).generate_transaction_url())
+
+
+@login_required
+def subscribe(request: HttpRequest, slug=None) -> HttpResponse:
+    subscription = _get_subscription(slug, request.user)
+    event = subscription.event
+    action = request.POST.get('action', default='view')
+    state = subscription.state
+    queue = QueueAgent(subscription)
+
 
     # perform appropriate saves if applicable
     if action == 'save' and form.is_valid() and SubsState.NEW <= state <= SubsState.QUEUED_FOR_PAY:
