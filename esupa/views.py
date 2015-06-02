@@ -22,13 +22,15 @@ from django.shortcuts import redirect, render
 from django.utils.timezone import now
 from django.views.decorators.csrf import csrf_exempt
 
-from .forms import SubscriptionForm, UploadForm
-from .models import Event, Subscription, SubsState, Transaction, PmtMethod
+from .forms import SubscriptionForm
+from .models import Event, Subscription, SubsState, Transaction
 from .notify import Notifier
-from .payment import Deposit, Processor, get_payment
+from .payment import PaymentBase, get_payment
 from .queue import QueueAgent, cron
 
 log = getLogger(__name__)
+
+BLANK_PAGE = HttpResponse()
 
 
 def _get_subscription(event_slug: str, user: User) -> Subscription:
@@ -54,48 +56,43 @@ def _get_subscription(event_slug: str, user: User) -> Subscription:
 
 
 @login_required
-def view_or_edit(request: HttpRequest, slug=None) -> HttpResponse:
+def view(request: HttpRequest, slug=None) -> HttpResponse:
     subscription = _get_subscription(slug, request.user)
-    if subscription.id or not subscription.event.subs_open:
-        return view(request, slug)
+    if subscription.id:
+        return render(request, 'esupa/view.html', {
+            'subscription': subscription,
+            'event': subscription.event,
+            'state': SubsState(subscription.state),
+        })
+    elif request.POST:
+        # Avoid an infinite loop. We shouldn't be receiving a POST in this view without a preexisting Subscription.
+        raise SuspiciousOperation
     else:
-        return edit(request, slug)
-
+        return edit(request, slug)  # may call view()
 
 @login_required
 def edit(request: HttpRequest, slug=None) -> HttpResponse:
     subscription = _get_subscription(slug, request.user)
     event = subscription.event
-    state = subscription.state
-    queue = QueueAgent(subscription)
-    formdata = request.POST if request.method == 'POST' else None
     if not subscription.id:
         subscription.email = subscription.user.email
-    form = SubscriptionForm(data=formdata, instance=subscription)
-    buttons = []
-    context = {
-        'subscription_form': form,
-        'actions': buttons,
-        'event': event,
-        'subscription': subscription,
-    }
-    # display subscription information
-    if not event.subs_open:
-        form.freeze()
-    elif (action == 'view' and not subscription.id) or (action == 'edit') or (action == 'save' and form.errors):
-        buttons.append(('save', 'Salvar'))
+    form = SubscriptionForm(data=request.POST or None, instance=subscription)
+    if request.POST and form.is_valid() and SubsState.NEW <= subscription.state <= SubsState.QUEUED_FOR_PAY:
+        form.save()
+        s = map(str.lower, (subscription.full_name, subscription.email, subscription.document, subscription.badge))
+        b = tuple(map(str.lower, filter(bool, event.data_to_be_checked.splitlines())))
+        acceptable = True not in (t in d for d in s for t in b)
+        subscription.state = SubsState.ACCEPTABLE if acceptable else SubsState.VERIFYING_DATA
+        subscription.save()
+        if not acceptable:
+            Notifier(subscription).staffer_action_required()
+        return view(request)  # may call edit()
     else:
-        form.freeze()
-        if SubsState.NEW <= state <= SubsState.QUEUED_FOR_PAY:
-            buttons.append(('edit', 'Editar'))
-
-
-@login_required
-def view(request: HttpRequest, slug=None) -> HttpResponse:
-    subscription = _get_subscription(slug, request.user)
-    event = subscription.event
-    state = subscription.state
-    queue = QueueAgent(subscription)
+        return render(request, 'esupa/edit.html', {
+            'form': form,
+            'event': event,
+            'subscription': subscription,
+        })
 
 
 @login_required
@@ -107,29 +104,6 @@ def pay(request: HttpRequest, slug=None) -> HttpResponse:
     queue = QueueAgent(subscription)
     if action == 'pay_processor' and event.sales_open and queue.within_capacity:
         return redirect(Processor.get(subscription).generate_transaction_url())
-
-
-@login_required
-def subscribe(request: HttpRequest, slug=None) -> HttpResponse:
-    subscription = _get_subscription(slug, request.user)
-    event = subscription.event
-    action = request.POST.get('action', default='view')
-    state = subscription.state
-    queue = QueueAgent(subscription)
-
-
-    # perform appropriate saves if applicable
-    if action == 'save' and form.is_valid() and SubsState.NEW <= state <= SubsState.QUEUED_FOR_PAY:
-        form.save()
-        s = map(str.lower, (subscription.full_name, subscription.email, subscription.document, subscription.badge))
-        b = tuple(map(str.lower, filter(bool, event.data_to_be_checked.splitlines())))
-        acceptable = True not in (t in d for d in s for t in b)
-        subscription.state = SubsState.ACCEPTABLE if acceptable else SubsState.VERIFYING_DATA
-        subscription.save()  # action=save
-        if not acceptable:
-            Notifier(subscription).staffer_action_required()
-
-    # deal with payment related stuff
     context['documents'] = subscription.transaction_set.filter(filled_at__isnull=False).values(
         'id', 'filled_at', 'ended_at', 'accepted')
     state = subscription.state  # time to refresh this information!
@@ -157,6 +131,17 @@ def subscribe(request: HttpRequest, slug=None) -> HttpResponse:
             else:
                 buttons.append(('pay_none', 'Entrar na fila de pagamento'))
 
+
+@login_required
+def subscribe(request: HttpRequest, slug=None) -> HttpResponse:
+    subscription = _get_subscription(slug, request.user)
+    event = subscription.event
+    action = request.POST.get('action', default='view')
+    state = subscription.state
+    queue = QueueAgent(subscription)
+
+    # deal with payment related stuff
+
     # ...whew.
     context['state'] = SubsState(subscription.state)
     return render(request, 'esupa/form.html', context)
@@ -177,14 +162,14 @@ def transaction_document(request: HttpRequest, tid) -> HttpResponse:
 def cron_view(_, secret) -> HttpResponse:
     if secret != settings.ESUPA_CRON_SECRET:
         raise SuspiciousOperation
-    cron()
-    return HttpResponse()  # no response
+    response = cron()
+    return response if settings.DEBUG else BLANK_PAGE
 
 
 @csrf_exempt
-def paying(request: HttpRequest, slug) -> HttpResponse:
-    payment = get_payment(slug)
-    return payment.class_view(request) or HttpResponse()
+def paying(request: HttpRequest, code) -> HttpResponse:
+    resolved_view = get_payment(int(code)).class_view
+    return resolved_view(request) or BLANK_PAGE
 
 
 @login_required

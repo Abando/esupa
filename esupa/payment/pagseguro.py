@@ -32,7 +32,6 @@ log = getLogger(__name__)
 class Payment(PaymentBase):
     meta = PaymentMethodMeta(
         code=2,
-        slug='pagseguro',
         title='PagSeguro',
     )
 
@@ -78,9 +77,7 @@ class Payment(PaymentBase):
             self.transaction.save()
             self.subscription.save()
 
-    @CallbackDictionary
-    def status_callback(self, status: str, **_):
-        raise ValueError('Unknown PagSeguro status code: %s' % status)
+    status_callback = CallbackDictionary()
 
     @status_callback.register('aguardando', 'em_analise')
     def status_callback(self, queue: QueueAgent, **_):
@@ -121,20 +118,10 @@ class Payment(PaymentBase):
 
 
 class CallbackDictionary(dict):
-    def __init__(self, default=None, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.default = default
-
     def register(self, *keys):
-        def x(func):
+        def x(func) -> CallbackDictionary:
             for key in keys:
                 self[key] = func
             return self
 
         return x
-
-    def __getitem__(self, item):
-        if item in self:
-            return super().__getitem__(item)
-        else:
-            return self.default

@@ -29,7 +29,6 @@ log = getLogger(__name__)
 class Payment(PaymentBase):
     meta = PaymentMethodMeta(
         code=1,
-        slug='deposit',
         title='Depósito Bancário',
     )
 

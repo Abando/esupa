@@ -21,21 +21,18 @@ from ..models import Transaction, Subscription, payment_names
 
 log = getLogger(__name__)
 
-_implementation_by_slug = {}
-_implementation_by_code = {}
-
-get_payment = _implementation_by_slug.get
+_payment_methods = {}
+get_payment = _payment_methods.get
 
 
 class PaymentMethodMeta:
-    def __init__(self, code: int, slug: str, title: str):
+    def __init__(self, code: int, title: str):
         self.code = code
-        self.slug = slug
         self.title = title
 
 
 def load_submodules():
-    if not _implementation_by_code:
+    if not _payment_methods:
         return
     for importer, modname, ispkg in iter_modules(__path__, __name__ + '.'):
         print('Found submodule %s; importer %s' % (modname, importer))
@@ -46,12 +43,9 @@ def load_submodules():
                 subclass = module.Payment
                 meta = subclass.meta
                 assert isinstance(meta, PaymentMethodMeta)
-                if not meta.slug:
-                    meta.slug = modname
-                _implementation_by_slug[meta.slug] = subclass
-                _implementation_by_code[meta.code] = subclass
+                _payment_methods[meta.code] = subclass
                 payment_names[meta.code] = meta.title
-                log.info('Loaded payment module #%d, slug=%s, title=%s', meta.code, meta.slug, meta.title)
+                log.info('Loaded payment module %s: code=%d, title=%s', meta.code, modname, meta.title)
             else:
                 log.warn('Missing class Payment in module: %s', modname)
         except ImportError:
@@ -62,7 +56,7 @@ class PaymentBase:
     _subscription = None
     _transaction = None
 
-    meta = PaymentMethodMeta(0, '', '')
+    meta = PaymentMethodMeta(0, '')
 
     def __init__(self, subscription: Subscription=None, transaction: Transaction=None):
         if not subscription and not transaction:

@@ -27,5 +27,5 @@ urlpatterns = [
     url(r'^verify/(.+)$', views.verify_event, name='esupa-verify-event'),
     url(r'^doc/(.+)$', views.transaction_document, name='esupa-trans-doc'),
     url(r'^cron/(.+)$', views.cron_view, name='esupa-cron'),
-    url(r'^(.*)$', views.view_or_edit, name='esupa-subscribe'),
+    url(r'^(.*)$', views.view, name='esupa-subscribe'),
 ]
