@@ -25,6 +25,7 @@ from django.utils.timezone import now
 from django.views.decorators.csrf import csrf_exempt
 
 from . import urls
+from django.views.generic import ListView
 from .forms import SubscriptionForm
 from .models import Event, Subscription, SubsState, Transaction, payment_names
 from .notify import Notifier
@@ -63,7 +64,7 @@ def view(request: HttpRequest, slug=None) -> HttpResponse:
     subscription = _get_subscription(slug, request.user)
     if subscription.id:
         context = {
-            'subscription': subscription,
+            'sub': subscription,
             'event': subscription.event,
             'state': SubsState(subscription.state),
             'pay_buttons': payment_names,
@@ -85,12 +86,14 @@ def view(request: HttpRequest, slug=None) -> HttpResponse:
         # Avoid an infinite loop. We shouldn't be receiving a POST in this view without a preexisting Subscription.
         raise SuspiciousOperation
     else:
-        return edit(request, slug)  # may call view()
+        return edit(request, slug)  # may call view(); it's probably a bug if it does
 
 
 @login_required
 def edit(request: HttpRequest, slug=None) -> HttpResponse:
     subscription = _get_subscription(slug, request.user)
+    if subscription.state > SubsState.QUEUED_FOR_PAY:
+        return view(request, slug)  # may call edit(); it's probably a bug if it does
     if not subscription.id:
         subscription.email = subscription.user.email
     form = SubscriptionForm(data=request.POST or None, instance=subscription)
@@ -103,7 +106,7 @@ def edit(request: HttpRequest, slug=None) -> HttpResponse:
         subscription.save()
         if not acceptable:
             Notifier(subscription).staffer_action_required()
-        return view(request)  # may call edit()
+        return view(request, slug)  # may call edit(); it's probably a bug if it does
     else:
         return render(request, 'esupa/edit.html', {
             'form': form,
@@ -127,8 +130,8 @@ def transaction_document(request: HttpRequest, tid) -> HttpResponse:
 def cron_view(_, secret) -> HttpResponse:
     if secret != settings.ESUPA_CRON_SECRET:
         raise SuspiciousOperation
-    response = cron()
-    return response if settings.DEBUG else BLANK_PAGE
+    cron()
+    return BLANK_PAGE
 
 
 @csrf_exempt

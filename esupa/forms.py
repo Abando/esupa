@@ -32,7 +32,10 @@ class ModelPricedOptInField(forms.ModelMultipleChoiceField):
 
     def label_from_instance(self, obj):
         assert isinstance(obj, Optional)
-        return '%s (R$ %s)' % (obj.name, obj.price)
+        if obj.price:
+            return '%s (R$ %s)' % (obj.name, obj.price)
+        else:
+            return '%s (grátis)' % obj.name
 
 
 class SubscriptionForm(forms.ModelForm):
@@ -79,7 +82,7 @@ class SubscriptionForm(forms.ModelForm):
                   'problemas respiratórios, do coração, alergias (alimentares e medicamentosas), '
                   'qualquer problema ou condição que necessite de cuidado especial.')
     optionals = ModelPricedOptInField(label='Opcional', required=False)
-    agreed = forms.BooleanField(label='Li e concordo com o [regulamento desse ano].')
+    agreed = forms.BooleanField(label='Li e concordo com o [regulamento].')
 
     class Meta:
         model = Subscription
@@ -104,11 +107,6 @@ class SubscriptionForm(forms.ModelForm):
             )
         return born
 
-    def freeze(self):
-        for field in self.fields.values():
-            field.widget = DisplayWidget()
-            field.help_text = None
-
     def _add_agreement_link(self, event):
         label = str(self.fields['agreed'].label)
         url = event.agreement_url
@@ -124,16 +122,3 @@ class SubscriptionForm(forms.ModelForm):
         when = formats.date_format(event.starts_at, 'DATE_FORMAT').lower()
         warning = ' Você deverá ter %d anos ou mais no dia %s.' % (event.min_age, when)
         self.fields['born'].help_text += warning
-
-
-class DisplayWidget(widgets.Widget):
-    def render(self, name, value, attrs=None):
-        if not value:
-            return '-'
-        elif name == 'optionals':
-            optionals = Optional.objects.filter(id__in=value).all()
-            return ''.join(map(lambda o: '<div>%s</div>' % o.name, optionals))
-        elif name in ('health_insured', 'agreed'):
-            return 'Sim' if value else 'Não'
-        else:
-            return value
