@@ -19,6 +19,7 @@ from django.contrib.auth.models import User
 from django.core.mail import EmailMessage
 from django.core.urlresolvers import reverse
 
+from . import urls
 from .models import Subscription
 
 log = getLogger(__name__)
@@ -80,7 +81,7 @@ class Notifier:
         """Sent to staffers, telling them that they're supposed to verify some data."""
         subject = '[%s] verificar: %s' % (self.s.event.name, self.s.badge)
         body = 'Verificar inscrição #%d (%s): %s' % (
-            self.s.id, self.s.badge, reverse('esupa-verify-event', args=[self.s.event.id]))
+            self.s.id, self.s.badge, reverse(urls.VERIFY_EVENT, args=[self.s.event.id]))
         recipients = User.objects.filter(is_staff=True).values_list('email', flat=True)
         _mail(recipients, subject, body)
 

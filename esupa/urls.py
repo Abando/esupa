@@ -15,15 +15,23 @@ from django.conf.urls import url
 
 from . import views
 
+VIEW = 'esupa-view'
+EDIT = 'esupa-edit'
+PAY = 'esupa-pay'
+VERIFY = 'esupa-verify'
+VERIFY_EVENT = 'esupa-verify-event'
+DOCUMENT = 'esupa-verify-event'
+CRON = 'esupa-cron'
+
 urlpatterns = [
-    url(r'^view$', views.view, name='esupa-view'),
-    url(r'^view/(.*)$', views.view, name='esupa-view'),
-    url(r'^edit$', views.edit, name='esupa-edit'),
-    url(r'^edit/(.*)$', views.edit, name='esupa-edit'),
-    url(r'^pay/(.*)$', views.paying, name='esupa-pay'),
-    url(r'^verify$', views.verify, name='esupa-verify'),
-    url(r'^verify/(.+)$', views.verify_event, name='esupa-verify-event'),
-    url(r'^doc/(.+)$', views.transaction_document, name='esupa-trans-doc'),
-    url(r'^cron/(.+)$', views.cron_view, name='esupa-cron'),
-    url(r'^(.*)$', views.view, name='esupa-subscribe'),
+    url(r'^view$', views.view, name=VIEW),
+    url(r'^view/(.*)$', views.view, name=VIEW),
+    url(r'^edit$', views.edit, name=EDIT),
+    url(r'^edit/(.*)$', views.edit, name=EDIT),
+    url(r'^pay/(.*)$', views.paying, name=PAY),
+    url(r'^verify$', views.verify, name=VERIFY),
+    url(r'^verify/(.+)$', views.verify_event, name=VERIFY_EVENT),
+    url(r'^doc/(.+)$', views.transaction_document, name=DOCUMENT),
+    url(r'^cron/(.+)$', views.cron_view, name=CRON),
+    url(r'^(.*)$', views.view, name=VIEW),
 ]

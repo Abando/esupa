@@ -24,6 +24,7 @@ from django.shortcuts import render
 from django.utils.timezone import now
 from django.views.decorators.csrf import csrf_exempt
 
+from . import urls
 from .forms import SubscriptionForm
 from .models import Event, Subscription, SubsState, Transaction, payment_names
 from .notify import Notifier
@@ -66,7 +67,7 @@ def view(request: HttpRequest, slug=None) -> HttpResponse:
             'event': subscription.event,
             'state': SubsState(subscription.state),
             'pay_buttons': payment_names,
-            'post_to': reverse('esupa-view', args=[slug]),
+            'post_to': reverse(urls.VIEW, args=[slug]),
         }
         if 'pay_with' in request.POST:
             payment = get_payment(int(request.POST['pay_with']))(subscription)
@@ -74,7 +75,7 @@ def view(request: HttpRequest, slug=None) -> HttpResponse:
             pay_info = payment.start_payment(subscription.price)
             if isinstance(pay_info, Form):
                 context['pay_form'] = pay_info
-                context['post_to'] = reverse('esupa-pay', args=[payment.CODE])
+                context['post_to'] = reverse(urls.PAY, args=[payment.CODE])
             elif isinstance(pay_info, HttpResponse):
                 return pay_info
             else:
