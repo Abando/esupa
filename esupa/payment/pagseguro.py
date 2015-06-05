@@ -17,7 +17,6 @@ from logging import getLogger
 from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.http import HttpRequest
-from django.shortcuts import redirect
 from pagseguro.api import PagSeguroApi, PagSeguroItem
 from pagseguro.settings import TRANSACTION_STATUS
 
@@ -25,19 +24,10 @@ from . import PaymentBase
 from ..models import SubsState, Transaction
 from ..notify import Notifier
 from ..queue import QueueAgent
+from ..utils import FunctionDictionary, prg_redirect
 from ..views import paying
 
 log = getLogger(__name__)
-
-
-class CallbackDictionary(dict):
-    def register(self, *keys):
-        def x(func) -> CallbackDictionary:
-            for key in keys:
-                self[key] = func
-            return self
-
-        return x
 
 
 class Payment(PaymentBase):
@@ -57,7 +47,7 @@ class Payment(PaymentBase):
         api.add_item(PagSeguroItem(id=self.transaction.id, description=event.name, amount=amount, quantity=1))
         data = api.checkout()
         if data['success']:
-            return redirect(data['redirect_url'])
+            return prg_redirect(data['redirect_url'])
         else:
             log.error('Data returned error. %s', repr(data))
             raise ValueError('PagSeguro denied pay. %s' % repr(data))
@@ -86,7 +76,7 @@ class Payment(PaymentBase):
             self.transaction.save()
             self.subscription.save()
 
-    status_callback = CallbackDictionary()
+    status_callback = FunctionDictionary()
 
     @status_callback.register('aguardando', 'em_analise')
     def status_callback(self, queue: QueueAgent, **_):

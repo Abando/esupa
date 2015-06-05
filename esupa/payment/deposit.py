@@ -17,11 +17,11 @@ from django import forms
 from django.core.exceptions import PermissionDenied, SuspiciousOperation
 from django.core.urlresolvers import reverse
 from django.http import HttpRequest, HttpResponse
-from django.shortcuts import redirect
 from django.utils.timezone import now
 
 from . import PaymentBase
 from ..models import Transaction, SubsState
+from ..utils import prg_redirect
 from ..views import view
 
 log = getLogger(__name__)
@@ -45,7 +45,7 @@ class Payment(PaymentBase):
             if transaction.subscription.state == SubsState.QUEUED_FOR_PAY:
                 raise PermissionDenied
             cls.put_file(transaction, request.FILES['upload'])
-            return redirect(reverse(view.name, args=(transaction.subscription.event.slug,)))
+            return prg_redirect(reverse(view.name, args=(transaction.subscription.event.slug,)))
         else:
             return DepositForm(transaction, data=request.POST, files=request.FILES)
 

@@ -25,12 +25,6 @@ _payment_methods = {}
 get_payment = _payment_methods.get
 
 
-class PaymentMethodMeta:
-    def __init__(self, code: int, title: str):
-        self.code = code
-        self.title = title
-
-
 def load_submodules():
     if _payment_methods:
         return

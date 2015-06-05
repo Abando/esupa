@@ -29,18 +29,11 @@ from .models import Event, Subscription, SubsState, Transaction, payment_names
 from .notify import Notifier
 from .payment import PaymentBase, get_payment
 from .queue import cron
+from .utils import named
 
 log = getLogger(__name__)
 
 BLANK_PAGE = HttpResponse()
-
-
-def _named(name: str):
-    def apply_decoration(func):
-        func.name = name
-        return func
-
-    return apply_decoration
 
 
 def _get_subscription(event_slug: str, user: User) -> Subscription:
@@ -65,7 +58,7 @@ def _get_subscription(event_slug: str, user: User) -> Subscription:
     return result
 
 
-@_named('esupa-view')
+@named('esupa-view')
 @login_required
 def view(request: HttpRequest, slug=None) -> HttpResponse:
     subscription = _get_subscription(slug, request.user)
@@ -96,7 +89,7 @@ def view(request: HttpRequest, slug=None) -> HttpResponse:
         return edit(request, slug)  # may call view(); it's probably a bug if it does
 
 
-@_named('esupa-edit')
+@named('esupa-edit')
 @login_required
 def edit(request: HttpRequest, slug=None) -> HttpResponse:
     subscription = _get_subscription(slug, request.user)
@@ -123,7 +116,7 @@ def edit(request: HttpRequest, slug=None) -> HttpResponse:
         })
 
 
-@_named('esupa-trans-doc')
+@named('esupa-trans-doc')
 @login_required
 def transaction_document(request: HttpRequest, tid) -> HttpResponse:
     # Add ETag generation & verification… maybe… eventually…
@@ -136,7 +129,7 @@ def transaction_document(request: HttpRequest, tid) -> HttpResponse:
     return response
 
 
-@_named('esupa-cron')
+@named('esupa-cron')
 def cron_view(_, secret) -> HttpResponse:
     if secret != settings.ESUPA_CRON_SECRET:
         raise SuspiciousOperation
@@ -144,14 +137,14 @@ def cron_view(_, secret) -> HttpResponse:
     return BLANK_PAGE
 
 
-@_named('esupa-pay')
+@named('esupa-pay')
 @csrf_exempt
 def paying(request: HttpRequest, code) -> HttpResponse:
     resolved_view = get_payment(int(code)).class_view
     return resolved_view(request) or BLANK_PAGE
 
 
-@_named('esupa-verify')
+@named('esupa-verify')
 @login_required
 def verify(request: HttpRequest) -> HttpResponse:
     if not request.user.is_staff:
@@ -159,7 +152,7 @@ def verify(request: HttpRequest) -> HttpResponse:
     return render(request, 'esupa/verify.html', {'events': Event.objects})
 
 
-@_named('esupa-verify-event')
+@named('esupa-verify-event')
 @login_required
 def verify_event(request: HttpRequest, eid) -> HttpResponse:
     if not request.user.is_staff:
