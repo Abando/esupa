@@ -11,27 +11,26 @@
 # distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 #
-from django.conf.urls import url
+from django.conf import urls
 
 from . import views
 
-VIEW = 'esupa-view'
-EDIT = 'esupa-edit'
-PAY = 'esupa-pay'
-VERIFY = 'esupa-verify'
-VERIFY_EVENT = 'esupa-verify-event'
-DOCUMENT = 'esupa-verify-event'
-CRON = 'esupa-cron'
+
+def url(regex, view, kwargs=None, name=None, prefix=''):
+    if not name and hasattr(view, 'name'):
+        name = view.name
+    return urls.url(regex, view, kwargs, name, prefix)
+
 
 urlpatterns = [
-    url(r'^view$', views.view, name=VIEW),
-    url(r'^view/(.*)$', views.view, name=VIEW),
-    url(r'^edit$', views.edit, name=EDIT),
-    url(r'^edit/(.*)$', views.edit, name=EDIT),
-    url(r'^pay/(.*)$', views.paying, name=PAY),
-    url(r'^verify$', views.verify, name=VERIFY),
-    url(r'^verify/(.+)$', views.verify_event, name=VERIFY_EVENT),
-    url(r'^doc/(.+)$', views.transaction_document, name=DOCUMENT),
-    url(r'^cron/(.+)$', views.cron_view, name=CRON),
-    url(r'^(.*)$', views.view, name=VIEW),
+    url(r'^view$', views.view),
+    url(r'^view/(.*)$', views.view),
+    url(r'^edit$', views.edit),
+    url(r'^edit/(.*)$', views.edit),
+    url(r'^pay/(.*)$', views.paying),
+    url(r'^verify$', views.verify),
+    url(r'^verify/(.+)$', views.verify_event),
+    url(r'^doc/(.+)$', views.transaction_document),
+    url(r'^cron/(.+)$', views.cron_view),
+    url(r'^(.*)$', views.view),
 ]

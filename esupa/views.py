@@ -24,17 +24,23 @@ from django.shortcuts import render
 from django.utils.timezone import now
 from django.views.decorators.csrf import csrf_exempt
 
-from . import urls
-from django.views.generic import ListView
 from .forms import SubscriptionForm
 from .models import Event, Subscription, SubsState, Transaction, payment_names
 from .notify import Notifier
 from .payment import PaymentBase, get_payment
-from .queue import QueueAgent, cron
+from .queue import cron
 
 log = getLogger(__name__)
 
 BLANK_PAGE = HttpResponse()
+
+
+def _named(name: str):
+    def apply_decoration(func):
+        func.name = name
+        return func
+
+    return apply_decoration
 
 
 def _get_subscription(event_slug: str, user: User) -> Subscription:
@@ -59,6 +65,7 @@ def _get_subscription(event_slug: str, user: User) -> Subscription:
     return result
 
 
+@_named('esupa-view')
 @login_required
 def view(request: HttpRequest, slug=None) -> HttpResponse:
     subscription = _get_subscription(slug, request.user)
@@ -68,7 +75,7 @@ def view(request: HttpRequest, slug=None) -> HttpResponse:
             'event': subscription.event,
             'state': SubsState(subscription.state),
             'pay_buttons': payment_names,
-            'post_to': reverse(urls.VIEW, args=[slug]),
+            'post_to': reverse(view.name, args=[slug]),
         }
         if 'pay_with' in request.POST:
             payment = get_payment(int(request.POST['pay_with']))(subscription)
@@ -76,7 +83,7 @@ def view(request: HttpRequest, slug=None) -> HttpResponse:
             pay_info = payment.start_payment(subscription.price)
             if isinstance(pay_info, Form):
                 context['pay_form'] = pay_info
-                context['post_to'] = reverse(urls.PAY, args=[payment.CODE])
+                context['post_to'] = reverse(paying.name, args=[payment.CODE])
             elif isinstance(pay_info, HttpResponse):
                 return pay_info
             else:
@@ -89,6 +96,7 @@ def view(request: HttpRequest, slug=None) -> HttpResponse:
         return edit(request, slug)  # may call view(); it's probably a bug if it does
 
 
+@_named('esupa-edit')
 @login_required
 def edit(request: HttpRequest, slug=None) -> HttpResponse:
     subscription = _get_subscription(slug, request.user)
@@ -115,6 +123,7 @@ def edit(request: HttpRequest, slug=None) -> HttpResponse:
         })
 
 
+@_named('esupa-trans-doc')
 @login_required
 def transaction_document(request: HttpRequest, tid) -> HttpResponse:
     # Add ETag generation & verification… maybe… eventually…
@@ -127,6 +136,7 @@ def transaction_document(request: HttpRequest, tid) -> HttpResponse:
     return response
 
 
+@_named('esupa-cron')
 def cron_view(_, secret) -> HttpResponse:
     if secret != settings.ESUPA_CRON_SECRET:
         raise SuspiciousOperation
@@ -134,12 +144,14 @@ def cron_view(_, secret) -> HttpResponse:
     return BLANK_PAGE
 
 
+@_named('esupa-pay')
 @csrf_exempt
 def paying(request: HttpRequest, code) -> HttpResponse:
     resolved_view = get_payment(int(code)).class_view
     return resolved_view(request) or BLANK_PAGE
 
 
+@_named('esupa-verify')
 @login_required
 def verify(request: HttpRequest) -> HttpResponse:
     if not request.user.is_staff:
@@ -147,6 +159,7 @@ def verify(request: HttpRequest) -> HttpResponse:
     return render(request, 'esupa/verify.html', {'events': Event.objects})
 
 
+@_named('esupa-verify-event')
 @login_required
 def verify_event(request: HttpRequest, eid) -> HttpResponse:
     if not request.user.is_staff:
@@ -154,7 +167,7 @@ def verify_event(request: HttpRequest, eid) -> HttpResponse:
     event = Event.objects.get(id=int(eid))
     subscriptions = event.subscription_set.order_by('-state').all()
     context = {'event': event, 'subscriptions': subscriptions, 'state': SubsState(),
-               'pmethod': PmtMethod()}
+               'pmethod': '?'}  # FIXME
     if request.method == 'POST':
         what, oid, acceptable = request.POST['action'].split()
         oid, acceptable = int(oid), (acceptable == 'ok')
@@ -176,12 +189,13 @@ def verify_event(request: HttpRequest, eid) -> HttpResponse:
                 subscription.save()
                 notify.data_denied()
         elif subscription.state >= SubsState.ACCEPTABLE:
-            if Deposit(transaction=transaction).transaction.end(acceptable):
-                if acceptable:
-                    notify.confirmed()
-                else:
-                    QueueAgent(subscription).remove()
-                    notify.pay_denied()
+            raise NotImplementedError  # FIXME
+            # if Deposit(transaction=transaction).transaction.end(acceptable):
+            #     if acceptable:
+            #         notify.confirmed()
+            #     else:
+            #         QueueAgent(subscription).remove()
+            #         notify.pay_denied()
         else:
             return HttpResponseBadRequest('Invalid attempt to %s %s=%d (%s) because subscription state is %s' % (
                 'accept' if acceptable else 'reject', what, oid, subscription.badge, SubsState(subscription.state)))

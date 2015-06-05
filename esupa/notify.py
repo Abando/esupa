@@ -19,7 +19,6 @@ from django.contrib.auth.models import User
 from django.core.mail import EmailMessage
 from django.core.urlresolvers import reverse
 
-from . import urls
 from .models import Subscription
 
 log = getLogger(__name__)
@@ -27,6 +26,7 @@ log = getLogger(__name__)
 
 def _mail(recipients, subject, body):
     it = 'mail#%d' % randint(0, 0x10000)
+
     def mail():
         try:
             log.info("Trying to send %s to %s about %s", it, ','.join(recipients), subject)
@@ -79,9 +79,11 @@ class Notifier:
 
     def staffer_action_required(self):
         """Sent to staffers, telling them that they're supposed to verify some data."""
+        from .views import verify_event
+
         subject = '[%s] verificar: %s' % (self.s.event.name, self.s.badge)
         body = 'Verificar inscrição #%d (%s): %s' % (
-            self.s.id, self.s.badge, reverse(urls.VERIFY_EVENT, args=[self.s.event.id]))
+            self.s.id, self.s.badge, reverse(verify_event.name, args=[self.s.event.id]))
         recipients = User.objects.filter(is_staff=True).values_list('email', flat=True)
         _mail(recipients, subject, body)
 
