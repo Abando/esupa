@@ -21,8 +21,8 @@ from django.shortcuts import redirect
 from django.utils.timezone import now
 
 from . import PaymentBase
-from .. import urls
 from ..models import Transaction, SubsState
+from ..views import view
 
 log = getLogger(__name__)
 
@@ -45,7 +45,7 @@ class Payment(PaymentBase):
             if transaction.subscription.state == SubsState.QUEUED_FOR_PAY:
                 raise PermissionDenied
             cls.put_file(transaction, request.FILES['upload'])
-            return redirect(reverse(urls.VIEW, args=(transaction.subscription.event.slug,)))
+            return redirect(reverse(view.name, args=(transaction.subscription.event.slug,)))
         else:
             return DepositForm(transaction, data=request.POST, files=request.FILES)
 

@@ -22,10 +22,10 @@ from pagseguro.api import PagSeguroApi, PagSeguroItem
 from pagseguro.settings import TRANSACTION_STATUS
 
 from . import PaymentBase
-from .. import urls
 from ..models import SubsState, Transaction
 from ..notify import Notifier
 from ..queue import QueueAgent
+from ..views import paying
 
 log = getLogger(__name__)
 
@@ -52,7 +52,7 @@ class Payment(PaymentBase):
         event = self.subscription.event
         api = PagSeguroApi()
         api.params['reference'] = self.transaction.id
-        api.params['notificationURL'] = settings.BASE_PUBLIC_URI + reverse(urls.PAY, args=['pagseguro'])
+        api.params['notificationURL'] = settings.BASE_PUBLIC_URI + reverse(paying.name, args=['pagseguro'])
         log.debug('Set notification URI: %s', api.params['notificationURL'])
         api.add_item(PagSeguroItem(id=self.transaction.id, description=event.name, amount=amount, quantity=1))
         data = api.checkout()
