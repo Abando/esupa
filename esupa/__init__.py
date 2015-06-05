@@ -24,4 +24,4 @@ class EsupaApp(AppConfig):
         load_submodules()
 
 
-default_app_config = __name__ + '.EsupaApp'
+default_app_config = '.'.join((__name__, EsupaApp.__name__))

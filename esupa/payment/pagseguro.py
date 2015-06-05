@@ -30,6 +30,16 @@ from ..queue import QueueAgent
 log = getLogger(__name__)
 
 
+class CallbackDictionary(dict):
+    def register(self, *keys):
+        def x(func) -> CallbackDictionary:
+            for key in keys:
+                self[key] = func
+            return self
+
+        return x
+
+
 class Payment(PaymentBase):
     CODE = 2
     TITLE = 'PagSeguro'
@@ -114,13 +124,3 @@ class Payment(PaymentBase):
         if self.transaction.end(sucessfully=False):
             queue.remove()
             notify.pay_denied()
-
-
-class CallbackDictionary(dict):
-    def register(self, *keys):
-        def x(func) -> CallbackDictionary:
-            for key in keys:
-                self[key] = func
-            return self
-
-        return x

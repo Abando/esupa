@@ -11,8 +11,9 @@
 # distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 #
+from importlib import import_module
 from logging import getLogger
-from pkgutil import iter_modules
+from pkgutil import walk_packages
 
 from django.http import HttpResponse, HttpRequest
 
@@ -31,12 +32,12 @@ class PaymentMethodMeta:
 
 
 def load_submodules():
-    if not _payment_methods:
+    if _payment_methods:
         return
-    for importer, modname, ispkg in iter_modules(__path__, __name__ + '.'):
-        log.info('Found submodule %s; importer %s' % (modname, importer))
+    for loader, modname, ispkg in walk_packages(__path__):
+        log.info('Found sub%s %s' % ('package' if ispkg else 'module', modname))
         try:
-            module = importer.load_module(modname)
+            module = import_module('.'.join((__name__, modname)))
             log.debug('Imported payment module: %s', modname)
             if hasattr(module, 'Payment'):
                 subclass = module.Payment
