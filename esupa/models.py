@@ -51,6 +51,13 @@ class Enum:
     def __str__(self):
         return self._descr
 
+    @property
+    def value(self):
+        return self._value
+
+    def __int__(self):
+        return self._value
+
     def __repr__(self):
         return '%s(%d)' % (str(type(self)), self._value)
 
