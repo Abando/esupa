@@ -12,6 +12,10 @@
             <p>
                 Nos vemos no {{event.name}}!
             </p>
+            {% elif state.value <= state.QUEUED_FOR_PAY %}
+            <p class="buttons">
+                <a class="anchor_button" href="{% url 'esupa-edit' event.slug %}">&nbsp; Editar &nbsp;</a>
+            </p>
             {% endif %}
             <ul>
                 <li>Nome legal: <strong>{{sub.full_name}}</strong></li>
