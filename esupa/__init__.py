@@ -13,14 +13,14 @@
 #
 from django.apps import AppConfig
 
-from .payment import load_submodules
-
 
 class EsupaApp(AppConfig):
     name = __name__
     verbose_name = 'Event Subscription and Payment'
 
     def ready(self):
+        from .payment import load_submodules
+
         load_submodules()
 
 
