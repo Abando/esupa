@@ -19,15 +19,44 @@ from django.http.response import HttpResponseRedirectBase
 
 
 class FunctionDictionary(dict):
-    """ A dictionary that includes a decorator to add functions to it as they're declared. """
+    """ A dictionary that includes decorators to add functions to it as they're declared. """
 
     def register(self, *keys):
+        """
+        This mode is to anonymize functions. Use it as follows:
+
+        .. code-block::
+
+            my_func_dict = FunctionDictionary()
+            @my_func_dict.register('key1', 'key2')
+            def my_func_dict(int_arg):
+                return int_arg * 2
+
+            my_func_dict['key1'](1) == my_func_dict['key2'](1)
+        """
         def x(func) -> FunctionDictionary:
             for key in keys:
                 self[key] = func
             return self
 
         return x
+
+    def __call__(self, func):
+        """
+        This mode will keep declared functions visible as declared.
+        It'll only add them to the dictionary using their name as key:
+
+        .. code-block::
+
+            my_func_dict = FunctionDictionary()
+            @my_func_dict
+            def as_double(int_arg):
+                return int_arg * 2
+
+            my_func_dict['as_double'](1) == as_double(1)
+        """
+        self[func.__name__] = func
+        return func
 
 
 def named(name: str):
