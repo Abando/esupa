@@ -11,6 +11,12 @@
 # distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 #
+"""
+Very simple implementation designed for single server, single process, few users.
+
+May scalability ever become an issue, replace this with something like Celery and
+RabbitMQ. Let's not reinvent the wheel too much, shall we?
+"""
 from json import dumps, loads
 from logging import getLogger
 from threading import Lock
@@ -22,21 +28,31 @@ from django.utils.timezone import now
 from .notify import BatchNotifier
 from .models import Event, QueueContainer, Subscription, SubsState
 
-"""
-Very simple implementation designed for single server, single process, few users.
-
-May scalability ever become an issue, replace this with something like Celery and
-RabbitMQ. Let's not reinvent the wheel too much, shall we?
-"""
-
 log = getLogger(__name__)
 
-_lock = Lock()  # this could be event specific, but for now let's keep it global
+
+class LockDict(dict):
+    def __init__(self, lock=Lock, **kwargs):
+        self.lock = lock
+        self.outer = lock()
+        super().__init__(**kwargs)
+
+    def __getitem__(self, key):
+        with self.outer:
+            if key not in self:
+                self[key] = self.lock()
+            return super().__getitem__(key)
+
+
+_lock = LockDict()
 
 
 class QueueAgent:
-    """This agent will atomically act upon the event queue on behalf of one subscription. It caches some stuff, so
-    don't keep it for long."""
+    """
+    This agent will atomically act upon the event queue on behalf of one subscription.
+
+    It caches some stuff, so don't keep it for longer than one HTTP request.
+    """
 
     def __init__(self, subscription):
         self.s = subscription
@@ -61,13 +77,13 @@ class QueueAgent:
         return self._atomic_db_write(_remove)
 
     def _atomic_db_read(self, operation):
-        with _lock:
+        with _lock[self.eid]:
             qc, created = QueueContainer.objects.get_or_create(event_id=self.eid)
             queue = [] if created else loads(qc.data)
             return operation(queue, self.s.id)
 
     def _atomic_db_write(self, operation):
-        with _lock:
+        with _lock[self.eid]:
             qc, created = QueueContainer.objects.get_or_create(event_id=self.eid)
             queue = [] if created else loads(qc.data)
             result = operation(queue, self.s.id)
@@ -141,6 +157,6 @@ def _update_all_subscriptions(event, notify):
 def cron():
     for event in Event.objects.filter(starts_at__gt=now()).iterable():
         notify = BatchNotifier()
-        with _lock, transaction.atomic():
+        with _lock[event.id], transaction.atomic():
             _update_all_subscriptions(event, notify)
         notify.send_notifications()
