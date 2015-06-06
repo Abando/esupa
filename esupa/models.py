@@ -171,8 +171,6 @@ class Subscription(models.Model):
     optionals = models.ManyToManyField(Optional, blank=True)
     agreed = models.BooleanField(default=False)
     position = models.IntegerField(null=True, blank=True)
-    paid = models.BooleanField(default=False)
-    paid_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return self.badge
@@ -195,6 +193,15 @@ class Subscription(models.Model):
     @property
     def price(self) -> Decimal:
         return self.event.price + (self.optionals.aggregate(models.Sum('price'))['price__sum'] or 0)
+
+    @property
+    def paid(self) -> Decimal:
+        return self.transaction_set.filter(accepted=True, ended_at__isnull=False) \
+                   .aggregate(models.Sum('amount'))['amount__sum'] or Decimal(0)
+
+    @property
+    def owing(self) -> Decimal:
+        return self.price - self.paid
 
     @property
     def str_state(self) -> str:

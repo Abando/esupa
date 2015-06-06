@@ -21,4 +21,12 @@ class Migration(migrations.Migration):
             old_name='subs_start_at',
             new_name='subs_toggle',
         ),
+        migrations.RemoveField(
+            model_name='subscription',
+            name='paid',
+        ),
+        migrations.RemoveField(
+            model_name='subscription',
+            name='paid_at',
+        ),
     ]
