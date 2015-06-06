@@ -68,6 +68,7 @@ class SubsState(Enum):
     QUEUED_FOR_PAY = 33
     EXPECTING_PAY = 55
     VERIFYING_PAY = 66
+    PARTIALLY_PAID = 77
     UNPAID_STAFF = 88
     CONFIRMED = 99
     VERIFYING_DATA = -1
@@ -78,6 +79,7 @@ class SubsState(Enum):
         (QUEUED_FOR_PAY, 'Em fila para poder pagar'),
         (EXPECTING_PAY, 'Aguardando pagamento'),
         (VERIFYING_PAY, 'Verificando pagamento'),
+        (PARTIALLY_PAID, 'Parcialmente paga'),
         (UNPAID_STAFF, 'Tripulante não pago'),
         (CONFIRMED, 'Confirmada'),
         (VERIFYING_DATA, 'Verificando dados'),
@@ -178,6 +180,9 @@ class Subscription(models.Model):
     def raise_state(self, state):
         if self.state < state:
             self.state = state
+            return True
+        else:
+            return False
 
     @property
     def waiting(self) -> bool:
@@ -235,15 +240,19 @@ class Transaction(models.Model):
         self.save()
         subscription = self.subscription
         if subscription.state >= SubsState.CONFIRMED:
-            # A confirmed subscription can't be touched.
+            # A confirmed subscription can't be touched by a transaction. (maybe a dispute?)
             return False
         elif sucessfully:
             # Transaction was accepted.
-            subscription.raise_state(SubsState.CONFIRMED)
+            new_state = SubsState.PARTIALLY_PAID if subscription.owing else SubsState.CONFIRMED
+            changed = subscription.raise_state(new_state)
             subscription.save()
-            return True
+            return changed
+        elif subscription.state >= SubsState.PARTIALLY_PAID:
+            # Rejected transaction, but staff and partial payments will remain in their position until manually removed.
+            return False
         elif subscription.transaction_set.filter(ended_at__isnull=True, method=self.method).exists():
-            # Pending transaction of this type was rejected, wasn't the last one.
+            # Pending transaction of this type was rejected. It wasn't the last one, so let's keep waiting.
             return False
         else:
             # Last pending transaction of this type was rejected.
