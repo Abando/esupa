@@ -73,7 +73,7 @@ def view(request: HttpRequest, slug=None) -> HttpResponse:
         if 'pay_with' in request.POST:
             payment = get_payment(int(request.POST['pay_with']))(subscription)
             assert isinstance(payment, PaymentBase)
-            pay_info = payment.start_payment(subscription.price)
+            pay_info = payment.start_payment(request, subscription.price)
             if isinstance(pay_info, Form):
                 context['pay_form'] = pay_info
                 context['post_to'] = reverse(paying.name, args=[payment.CODE])

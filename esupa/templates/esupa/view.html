@@ -1,7 +1,7 @@
 {% extends 'esupa/base.html' %}
 
 {% block content %}
-<form method="post" action="{{post_to}}" class="formPagamento" enctype="multipart/form-data">
+<form method="post" action="{% url 'esupa-view' event.slug %}" id="formView" enctype="multipart/form-data">
     {% csrf_token %}
     <div class="row">
         <div class="large-12 columns">
@@ -34,20 +34,9 @@
                 <li>Leu e concordou com o <a href="{{event.agreement_url}}">regulamento</a>?
                     <strong>{{sub.agreed|yesno}}</strong></li>
             </ul>
-            {% if sub.transaction_set %}
-            <ul class='esupa-documents'>
-                {% for doc in sub.transaction_set.all %}
-                <li>
-                    <a href="{% url 'esupa-trans-doc' doc.id %}">Enviado há {{doc.filled_at|timesince}}.</a>
-                    <span class="docOk{{doc.accepted}}">{{doc.ended_at}}</span>
-                </li>
-                {% endfor %}
-            </ul>
-            {% endif %}
-            {{pay_form}}
             <p class='buttons'>
                 {% for slug, title in pay_buttons.items %}
-                <button name='pay_with' value='{{ slug }}' id="pay_{{slug}}">&nbsp; {{ title }} &nbsp;</button>
+                <button name='pay_with' value='{{slug}}' id="pay_{{slug}}">&nbsp; {{ title }} &nbsp;</button>
                 {% endfor %}
             </p>
         </div>

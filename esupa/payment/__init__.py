@@ -99,7 +99,7 @@ class PaymentBase:
                 raise ValueError('Invalid change of subscription with saved transaction. tid=%d, sid=%d' %
                                  (self._transaction.id, self._subscription.id))
 
-    def start_payment(self, amount):
+    def start_payment(self, request, amount) -> HttpResponse:
         raise NotImplementedError
 
     @classmethod

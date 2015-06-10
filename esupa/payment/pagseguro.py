@@ -38,7 +38,7 @@ class Payment(PaymentBase):
         PaymentBase.__init__(**kwargs)
         self.data = data
 
-    def start_payment(self, amount):
+    def start_payment(self, request, amount):
         event = self.subscription.event
         api = PagSeguroApi()
         api.params['reference'] = self.transaction.id

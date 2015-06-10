@@ -17,6 +17,7 @@ from django import forms
 from django.core.exceptions import PermissionDenied, SuspiciousOperation
 from django.core.urlresolvers import reverse
 from django.http import HttpRequest, HttpResponse
+from django.shortcuts import render
 from django.utils.timezone import now
 
 from . import PaymentBase
@@ -31,8 +32,15 @@ class Payment(PaymentBase):
     CODE = 1
     TITLE = 'Depósito Bancário'
 
-    def start_payment(self, amount):
-        return DepositForm(self.transaction, amount)
+    def start_payment(self, request: HttpRequest, amount) -> HttpResponse:
+        self.transaction = None  # will reset the transaction
+        self.transaction.value = amount
+        context = {
+            'sub': self.subscription,
+            'trans': self.transaction,
+            'form': DepositForm(self.transaction),
+        }
+        return render(request, 'esupa/deposit.html', context)
 
     @classmethod
     def class_view(cls, request: HttpRequest) -> HttpResponse:
@@ -60,16 +68,14 @@ class Payment(PaymentBase):
 
 
 class DepositForm(forms.Form):
-    tid = forms.HiddenInput()
     amount = forms.DecimalField(label='Valor depositado', max_digits=7, decimal_places=2)
     upload = forms.FileField(label='Comprovante')
 
-    def __init__(self, transaction: Transaction, amount=None, *args, **kwargs):
+    def __init__(self, transaction: Transaction, *args, **kwargs):
         forms.Form.__init__(self, *args, **kwargs)
         subscription = transaction.subscription
         fmt = 'Deposite até R$ %s na conta abaixo e envie foto ou scan do comprovante.\n%s'
         msg = fmt % (subscription.price, subscription.event.deposit_info)
         self.fields['upload'].help_text = msg.replace('\n', '\n<br/>')
-        if amount:
-            self.fields['amount'].value = amount
-        self.fields['tid'].value = transaction.id
+        self.fields['amount'].initial = transaction.value
+        print(self.fields['amount'])
