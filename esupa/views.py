@@ -17,8 +17,6 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied, SuspiciousOperation
-from django.core.urlresolvers import reverse
-from django.forms import Form
 from django.http import HttpResponse, Http404, HttpRequest, HttpResponseBadRequest
 from django.shortcuts import render
 from django.utils.timezone import now
@@ -68,19 +66,12 @@ def view(request: HttpRequest, slug=None) -> HttpResponse:
             'event': subscription.event,
             'state': SubsState(subscription.state),
             'pay_buttons': payment_names,
-            'post_to': reverse(view.name, args=[slug]),
         }
         if 'pay_with' in request.POST:
             payment = get_payment(int(request.POST['pay_with']))(subscription)
             assert isinstance(payment, PaymentBase)
             pay_info = payment.start_payment(request, subscription.price)
-            if isinstance(pay_info, Form):
-                context['pay_form'] = pay_info
-                context['post_to'] = reverse(paying.name, args=[payment.CODE])
-            elif isinstance(pay_info, HttpResponse):
-                return pay_info
-            else:
-                raise NotImplementedError  # I'm not sure what to do here...
+            return pay_info
         return render(request, 'esupa/view.html', context)
     elif request.POST:
         # Avoid an infinite loop. We shouldn't be receiving a POST in this view without a preexisting Subscription.
