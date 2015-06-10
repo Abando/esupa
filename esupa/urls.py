@@ -32,5 +32,8 @@ urlpatterns = [
     url(r'^verify/(.+)$', views.verify_event),
     url(r'^doc/(.+)$', views.transaction_document),
     url(r'^cron/(.+)$', views.cron_view),
+    url(r'^check$', views.EventList.as_view()),
+    url(r'^check/e/(\d+)$', views.SubscriptionList.as_view()),
+    url(r'^check/d/(\d+)$', views.TransactionList.as_view()),
     url(r'^(.*)$', views.view),
 ]

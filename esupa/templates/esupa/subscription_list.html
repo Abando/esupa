@@ -22,7 +22,6 @@
         <td>{{event.num_openings}}</td>
     </tr>
 </table>
-<form method="post">{% csrf_token %}
     <h2>Subscriptions</h2>
     <table border="1" cellspacing="0">
         <tr>
@@ -36,10 +35,10 @@
             <th>Price</th>
             <th>Transactions</th>
         </tr>
-        {% for s in subscriptions %}
+        {% for s in subscription_list %}
         <tr bgcolor="{% cycle 'lightgrey' 'white' %}">
             <td>{{s.id}}</td>
-            <td>{{s.badge}}</td>
+            <td><a href="{% url 'esupa-check-docs' s.id %}">{{s.badge}}</a></td>
             <td>{{s.full_name}}</td>
             <td>{{s.email}}</td>
             <td>{{s.document}}</td>
@@ -61,26 +60,14 @@
                             {% endif %}
                         </td>
                         <td title="{{t.ended_at}}">
-                            {% if t.ended_at %}{% if t.accepted %}✔{% else %}✘{% endif %}
-                            {% elif t.method == pmethod.PAGSEGURO %}?{% else %}
-                            <button name="action" value="t {{t.id}} ok">✔</button>
-                            <button name="action" value="t {{t.id}} bad">✘</button>
-                            {% endif %}
+                            {% if not t.ended_at %}?{% elif t.accepted %}✔{% else %}✘{% endif %}
                         </td>
                     </tr>
                     {% endfor %}
                 </table>
-                {% if s.state == state.VERIFYING_DATA %}
-                <button name="action" value="s {{s.id}} ok">Approve!</button>
-                <button name="action" value="s {{s.id}} bad">Deny!</button>
-                {% endif %}
-                {% if state.NEW < s.state and s.state < state.VERIFYING_PAY %}
-                <!--button name="action" value="s {{s.id}} ok">Paid Cash!</button-->
-                {% endif %}
             </td>
         </tr>
         {% endfor %}
     </table>
-</form>
 </body>
 </html>

@@ -19,8 +19,10 @@ from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied, SuspiciousOperation
 from django.http import HttpResponse, Http404, HttpRequest, HttpResponseBadRequest
 from django.shortcuts import render
+from django.utils.decorators import classonlymethod
 from django.utils.timezone import now
 from django.views.decorators.csrf import csrf_exempt
+from django.views.generic import ListView
 
 from .forms import SubscriptionForm
 from .models import Event, Subscription, SubsState, Transaction, payment_names
@@ -184,3 +186,66 @@ def verify_event(request: HttpRequest, eid) -> HttpResponse:
             return HttpResponseBadRequest('Invalid attempt to %s %s=%d (%s) because subscription state is %s' % (
                 'accept' if acceptable else 'reject', what, oid, subscription.badge, SubsState(subscription.state)))
     return render(request, 'esupa/event-verify.html', context)
+
+
+class EsupaListView(ListView):
+    name = ''
+
+    @classonlymethod
+    def as_view(cls, **initkwargs):
+        view_ = login_required(super().as_view(**initkwargs))
+        view_.name = cls.name
+        return view_
+
+    def dispatch(self, request, *args, **kwargs):
+        user = request.user
+        assert isinstance(user, User)
+        if not user.is_staff:
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        return super().get_context_data(user=self.request.user, **kwargs)
+
+
+class EventList(EsupaListView):
+    model = Event
+    name = 'esupa-check-all'
+
+
+class SubscriptionList(EsupaListView):
+    model = Subscription
+    name = 'esupa-check-event'
+    _event = None
+
+    @property
+    def event(self) -> Event:
+        if not self._event:
+            self._event = Event.objects.get(id=int(self.args[0]))
+        return self._event
+
+    def get_queryset(self):
+        return self.event.subscription_set.order_by('-state')
+
+    def get_context_data(self, **kwargs):
+        return super().get_context_data(event=self.event, **kwargs)
+
+
+class TransactionList(EsupaListView):
+    model = Transaction
+    name = 'esupa-check-docs'
+    _event = None
+    _subscription = None
+
+    @property
+    def event(self) -> Event:
+        if not self._event:
+            self._event = self.subscription.event
+        return self._event
+
+    @property
+    def subscription(self) -> Subscription:
+        if not self._subscription:
+            self._subscription = Subscription.objects.get(id=int(self.args[0]))
+            self._event = self._subscription.event
+        return self._subscription
