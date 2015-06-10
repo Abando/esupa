@@ -34,15 +34,13 @@ class Payment(PaymentBase):
     CODE = 2
     TITLE = 'PagSeguro'
 
-    def __init__(self, data=None, **kwargs):
-        PaymentBase.__init__(**kwargs)
-        self.data = data
-
     def start_payment(self, request, amount):
         event = self.subscription.event
         api = PagSeguroApi()
+        self.transaction.value = amount
+        self.transaction.save()
         api.params['reference'] = self.transaction.id
-        api.params['notificationURL'] = settings.BASE_PUBLIC_URI + reverse(paying.name, args=['pagseguro'])
+        api.params['notificationURL'] = request.build_absolute_uri(reverse(paying.name, args=[self.CODE]))
         log.debug('Set notification URI: %s', api.params['notificationURL'])
         api.add_item(PagSeguroItem(id=self.transaction.id, description=event.name, amount=amount, quantity=1))
         data = api.checkout()
@@ -60,7 +58,7 @@ class Payment(PaymentBase):
             data = PagSeguroApi().get_notification(notification_code)
             tid = int(data['reference'])
             transaction = Transaction.objects.get(id=tid)
-            payment = Payment(transaction=transaction)
+            payment = Payment(transaction)
             payment.callback_view(data)
 
     def callback_view(self, data: dict):
