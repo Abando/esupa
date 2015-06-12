@@ -28,8 +28,6 @@ urlpatterns = [
     url(r'^edit$', views.edit),
     url(r'^edit/(.*)$', views.edit),
     url(r'^pay/(.*)$', views.paying),
-    url(r'^verify$', views.verify),
-    url(r'^verify/(.+)$', views.verify_event),
     url(r'^doc/(.+)$', views.transaction_document),
     url(r'^cron/(.+)$', views.cron_view),
     url(r'^check$', views.EventList.as_view()),

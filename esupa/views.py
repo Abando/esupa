@@ -137,57 +137,6 @@ def paying(request: HttpRequest, code) -> HttpResponse:
     return resolved_view(request) or BLANK_PAGE
 
 
-@named('esupa-verify')
-@login_required
-def verify(request: HttpRequest) -> HttpResponse:
-    if not request.user.is_staff:
-        raise PermissionDenied
-    return render(request, 'esupa/verify.html', {'events': Event.objects})
-
-
-@named('esupa-verify-event')
-@login_required
-def verify_event(request: HttpRequest, eid) -> HttpResponse:
-    if not request.user.is_staff:
-        raise PermissionDenied
-    event = Event.objects.get(id=int(eid))
-    subscriptions = event.subscription_set.order_by('-state').all()
-    context = {'event': event, 'subscriptions': subscriptions, 'state': SubsState(),
-               'pmethod': '?'}  # FIXME
-    if request.method == 'POST':
-        what, oid, acceptable = request.POST['action'].split()
-        oid, acceptable = int(oid), (acceptable == 'ok')
-        if what == 's':
-            subscription = Subscription.objects.get(id=oid)
-            transaction = None
-        else:
-            transaction = Transaction.objects.get(id=oid)
-            subscription = transaction.subscription
-        notify = Notifier(subscription)
-        # the logic here is a bit too mixed. we might want to separate concerns more clearly.
-        if subscription.state == SubsState.VERIFYING_DATA:
-            if acceptable:
-                subscription.state = SubsState.ACCEPTABLE
-                subscription.save()
-                notify.can_pay()
-            else:
-                subscription.state = SubsState.DENIED
-                subscription.save()
-                notify.data_denied()
-        elif subscription.state >= SubsState.ACCEPTABLE:
-            raise NotImplementedError  # FIXME
-            # if Deposit(transaction=transaction).transaction.end(acceptable):
-            #     if acceptable:
-            #         notify.confirmed()
-            #     else:
-            #         QueueAgent(subscription).remove()
-            #         notify.pay_denied()
-        else:
-            return HttpResponseBadRequest('Invalid attempt to %s %s=%d (%s) because subscription state is %s' % (
-                'accept' if acceptable else 'reject', what, oid, subscription.badge, SubsState(subscription.state)))
-    return render(request, 'esupa/event-verify.html', context)
-
-
 class EsupaListView(ListView):
     name = ''
 
