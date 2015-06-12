@@ -78,4 +78,3 @@ class DepositForm(forms.Form):
         msg = fmt % (subscription.price, subscription.event.deposit_info)
         self.fields['upload'].help_text = msg.replace('\n', '\n<br/>')
         self.fields['amount'].initial = transaction.value
-        print(self.fields['amount'])

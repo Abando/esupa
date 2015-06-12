@@ -249,3 +249,6 @@ class TransactionList(EsupaListView):
             self._subscription = Subscription.objects.get(id=int(self.args[0]))
             self._event = self._subscription.event
         return self._subscription
+
+    def get_context_data(self, **kwargs):
+        return super().get_context_data(event=self.event, sub=self.subscription, **kwargs)
