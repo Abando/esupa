@@ -14,6 +14,7 @@
 from importlib import import_module
 from logging import getLogger
 from pkgutil import walk_packages
+from django.db.models import QuerySet
 
 from django.http import HttpResponse, HttpRequest
 
@@ -61,6 +62,9 @@ class PaymentBase:
             self.transaction = subscription_or_transaction
         else:
             raise ValueError
+
+    def transactions(self, **criteria) -> QuerySet:
+        return self.subscription.transaction_set.filter(**criteria)
 
     @property
     def transaction(self) -> Transaction:

@@ -17,7 +17,7 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied, SuspiciousOperation
-from django.http import HttpResponse, Http404, HttpRequest, HttpResponseBadRequest
+from django.http import HttpResponse, Http404, HttpRequest
 from django.shortcuts import render
 from django.utils.decorators import classonlymethod
 from django.utils.timezone import now
@@ -28,7 +28,7 @@ from .forms import SubscriptionForm
 from .models import Event, Subscription, SubsState, Transaction, payment_names
 from .notify import Notifier
 from .payment import PaymentBase, get_payment
-from .queue import cron
+from .queue import cron, QueueAgent
 from .utils import named
 
 log = getLogger(__name__)
@@ -70,10 +70,14 @@ def view(request: HttpRequest, slug=None) -> HttpResponse:
             'pay_buttons': payment_names,
         }
         if 'pay_with' in request.POST:
-            payment = get_payment(int(request.POST['pay_with']))(subscription)
-            assert isinstance(payment, PaymentBase)
-            pay_info = payment.start_payment(request, subscription.price)
-            return pay_info
+            queue = QueueAgent(subscription)
+            subscription.position = queue.add()
+            subscription.waiting = queue.within_capacity
+            subscription.raise_state(SubsState.EXPECTING_PAY if queue.within_capacity else SubsState.QUEUED_FOR_PAY)
+            if queue.within_capacity:
+                payment = get_payment(int(request.POST['pay_with']))(subscription)
+                assert isinstance(payment, PaymentBase)
+                return payment.start_payment(request, subscription.price)
         return render(request, 'esupa/view.html', context)
     elif request.POST:
         # Avoid an infinite loop. We shouldn't be receiving a POST in this view without a preexisting Subscription.

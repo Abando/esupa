@@ -14,7 +14,6 @@
 from logging import getLogger
 
 # sudo -H pip3 install django-pagseguro2
-from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.http import HttpRequest
 from pagseguro.api import PagSeguroApi, PagSeguroItem

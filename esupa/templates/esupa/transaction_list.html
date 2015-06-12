@@ -43,7 +43,7 @@
         </tr>
         </thead>
         <tbody>
-        {% for t in s.transaction_set.iterator %}
+        {% for t in transaction_list %}
         <tr class="trans">
             <td>{{t.id}}</td>
             <td>{{t.value}}</td>

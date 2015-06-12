@@ -33,8 +33,10 @@ class Payment(PaymentBase):
     TITLE = 'Depósito Bancário'
 
     def start_payment(self, request: HttpRequest, amount) -> HttpResponse:
-        self.transaction = None  # will reset the transaction
+        self.transaction = self.transactions(method=self.CODE, filled_at__isnull=True).first()
+        # If the transaction above is set to None, the call below will automatically create a new one.
         self.transaction.value = amount
+        self.transaction.save()
         context = {
             'sub': self.subscription,
             'trans': self.transaction,
