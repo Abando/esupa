@@ -1,0 +1,45 @@
+{% extends 'esupa/base.html' %}
+
+{% block content %}
+<form method="post" action="{% url 'esupa-view' event.slug %}" id="formView" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="row">
+        <div class="large-12 columns">
+            <p>
+                Sua inscrição está: <strong>{{state}}</strong>
+            </p>
+            {% if state.value >= state.CONFIRMED %}
+            <p>
+                Nos vemos no {{event.name}}!
+            </p>
+            {% elif state.value <= state.QUEUED_FOR_PAY %}
+            <p class="buttons">
+                <a class="anchor_button" href="{% url 'esupa-edit' event.slug %}">&nbsp; Editar &nbsp;</a>
+            </p>
+            {% endif %}
+            <ul>
+                <li>Nome legal: <strong>{{sub.full_name}}</strong></li>
+                <li>Documento: <strong>{{sub.document}}</strong></li>
+                <li>Crachá: <strong>{{sub.badge}}</strong></li>
+                <li>Email: <strong>{{sub.email}}</strong></li>
+                <li>Celular: <strong>{{sub.phone}}</strong></li>
+                <li>Nascimento: <strong>{{sub.born}}</strong></li>
+                <li>Camiseta: <strong>{{sub.shirt_size}}</strong></li>
+                <li>Tipo sanguíneo: <strong>{{sub.blood}}</strong></li>
+                <li>Possui plano de saúde? <strong>{{sub.health_insuled|yesno}}</strong></li>
+                <li>Contato de emergência: <strong>{{sub.contact}}</strong></li>
+                <li>Informações médicas rotineiras e de emergência: <strong>{{sub.medication}}</strong></li>
+                <li>Opcionais: <strong>{% for opt in sub.optionals.all %}
+                    {{opt.name}}{% if not forloop.last %}, {% endif %}{% empty %}nenhum{% endfor %}</strong></li>
+                <li>Leu e concordou com o <a href="{{event.agreement_url}}">regulamento</a>?
+                    <strong>{{sub.agreed|yesno}}</strong></li>
+            </ul>
+            <p class='buttons'>
+                {% for slug, title in pay_buttons.items %}
+                <button name='pay_with' value='{{slug}}' id="pay_{{slug}}">&nbsp; {{ title }} &nbsp;</button>
+                {% endfor %}
+            </p>
+        </div>
+    </div>
+</form>
+{% endblock %}

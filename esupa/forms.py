@@ -1,4 +1,16 @@
 # coding=utf-8
+#
+# Copyright 2015, Abando.com.br
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+# compliance with the License. You may obtain a copy of the License at
+#
+#        http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software distributed under the License is
+# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and limitations under the License.
+#
 from logging import getLogger
 
 from django import forms
@@ -20,7 +32,10 @@ class ModelPricedOptInField(forms.ModelMultipleChoiceField):
 
     def label_from_instance(self, obj):
         assert isinstance(obj, Optional)
-        return '%s (R$ %s)' % (obj.name, obj.price)
+        if obj.price:
+            return '%s (R$ %s)' % (obj.name, obj.price)
+        else:
+            return '%s (grátis)' % obj.name
 
 
 class SubscriptionForm(forms.ModelForm):
@@ -67,7 +82,7 @@ class SubscriptionForm(forms.ModelForm):
                   'problemas respiratórios, do coração, alergias (alimentares e medicamentosas), '
                   'qualquer problema ou condição que necessite de cuidado especial.')
     optionals = ModelPricedOptInField(label='Opcional', required=False)
-    agreed = forms.BooleanField(label='Li e concordo com o [regulamento desse ano].')
+    agreed = forms.BooleanField(label='Li e concordo com o [regulamento].')
 
     class Meta:
         model = Subscription
@@ -92,11 +107,6 @@ class SubscriptionForm(forms.ModelForm):
             )
         return born
 
-    def freeze(self):
-        for field in self.fields.values():
-            field.widget = DisplayWidget()
-            field.help_text = None
-
     def _add_agreement_link(self, event):
         label = str(self.fields['agreed'].label)
         url = event.agreement_url
@@ -112,26 +122,3 @@ class SubscriptionForm(forms.ModelForm):
         when = formats.date_format(event.starts_at, 'DATE_FORMAT').lower()
         warning = ' Você deverá ter %d anos ou mais no dia %s.' % (event.min_age, when)
         self.fields['born'].help_text += warning
-
-
-class DisplayWidget(widgets.Widget):
-    def render(self, name, value, attrs=None):
-        if not value:
-            return '-'
-        elif name == 'optionals':
-            optionals = Optional.objects.filter(id__in=value).all()
-            return ''.join(map(lambda o: '<div>%s</div>' % o.name, optionals))
-        elif name in ('health_insured', 'agreed'):
-            return 'Sim' if value else 'Não'
-        else:
-            return value
-
-
-class UploadForm(forms.Form):
-    upload = forms.FileField(label='Comprovante')
-
-    def __init__(self, subscription, *args, **kwargs):
-        forms.Form.__init__(self, *args, **kwargs)
-        fmt = 'Deposite R$ %s na conta abaixo e envie foto ou scan do comprovante.\n%s'
-        msg = fmt % (subscription.price, subscription.event.deposit_info)
-        self.fields['upload'].help_text = msg.replace('\n', '\n<br/>')

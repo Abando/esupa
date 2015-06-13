@@ -3,16 +3,20 @@ from __future__ import unicode_literals
 
 from django.db import models, migrations
 
-# sudo -H pip3 install python-magic
-from magic import Magic
-
 
 def discover_mimetype(apps, _):
+    try:
+        # sudo -H pip3 install python-magic
+        from magic import Magic
+    except ImportError:
+        Magic = None
+
+    guess_mime = Magic(mime=True).from_buffer if Magic else lambda _: 'application/x-octet-stream'
+
     t = apps.get_model('esupa', 'Transaction')
-    magic = Magic(mime=True)
     for transaction in t.objects.all():
         if transaction.document:
-            transaction.mimetype = magic.from_buffer(transaction.document)
+            transaction.mimetype = guess_mime(transaction.document)
             transaction.save()
         print('Transaction#%d detected mimetype is %s.' % (transaction.id, transaction.mimetype))
 

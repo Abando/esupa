@@ -1,4 +1,16 @@
 # coding=utf-8
+#
+# Copyright 2015, Abando.com.br
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+# compliance with the License. You may obtain a copy of the License at
+#
+#        http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software distributed under the License is
+# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and limitations under the License.
+#
 from logging import getLogger
 from random import randint
 from threading import Thread
@@ -14,6 +26,7 @@ log = getLogger(__name__)
 
 def _mail(recipients, subject, body):
     it = 'mail#%d' % randint(0, 0x10000)
+
     def mail():
         try:
             log.info("Trying to send %s to %s about %s", it, ','.join(recipients), subject)
@@ -66,9 +79,11 @@ class Notifier:
 
     def staffer_action_required(self):
         """Sent to staffers, telling them that they're supposed to verify some data."""
+        from .views import verify_event
+
         subject = '[%s] verificar: %s' % (self.s.event.name, self.s.badge)
         body = 'Verificar inscrição #%d (%s): %s' % (
-            self.s.id, self.s.badge, reverse('esupa-verify-event', args=[self.s.event.id]))
+            self.s.id, self.s.badge, reverse(verify_event.name, args=[self.s.event.id]))
         recipients = User.objects.filter(is_staff=True).values_list('email', flat=True)
         _mail(recipients, subject, body)
 

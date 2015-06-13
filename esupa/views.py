@@ -1,0 +1,207 @@
+# coding=utf-8
+#
+# Copyright 2015, Abando.com.br
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+# compliance with the License. You may obtain a copy of the License at
+#
+#        http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software distributed under the License is
+# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and limitations under the License.
+#
+from logging import getLogger
+
+from django.conf import settings
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
+from django.core.exceptions import PermissionDenied, SuspiciousOperation
+from django.http import HttpResponse, Http404, HttpRequest
+from django.shortcuts import render
+from django.utils.decorators import classonlymethod
+from django.utils.timezone import now
+from django.views.decorators.csrf import csrf_exempt
+from django.views.generic import ListView
+
+from .forms import SubscriptionForm
+from .models import Event, Subscription, SubsState, Transaction, payment_names
+from .notify import Notifier
+from .payment import PaymentBase, get_payment
+from .queue import cron, QueueAgent
+from .utils import named
+
+log = getLogger(__name__)
+
+BLANK_PAGE = HttpResponse()
+
+
+def _get_subscription(event_slug: str, user: User) -> Subscription:
+    """Takes existing subscription if available, creates a new one otherwise."""
+    if event_slug:
+        event = Event.objects.get(slug=event_slug)
+    else:
+        # find closest event in the future
+        event = Event.objects.filter(starts_at__gt=now()).order_by('starts_at').first()
+        if not event:
+            # find closest event in the past
+            event = Event.objects.filter(starts_at__lt=now()).order_by('-starts_at').first()
+        if not event:
+            raise Http404('There is no event. Create one in /admin/')
+    queryset = Subscription.objects
+    queryset = queryset.filter(event=event, user=user)
+    result = queryset.first()
+    if not result:
+        result = Subscription(event=event, user=user)
+    elif result.state == SubsState.DENIED:
+        raise PermissionDenied
+    return result
+
+
+@named('esupa-view')
+@login_required
+def view(request: HttpRequest, slug=None) -> HttpResponse:
+    subscription = _get_subscription(slug, request.user)
+    if subscription.id:
+        context = {
+            'sub': subscription,
+            'event': subscription.event,
+            'state': SubsState(subscription.state),
+            'pay_buttons': payment_names,
+        }
+        if 'pay_with' in request.POST:
+            queue = QueueAgent(subscription)
+            subscription.position = queue.add()
+            subscription.waiting = queue.within_capacity
+            subscription.raise_state(SubsState.EXPECTING_PAY if queue.within_capacity else SubsState.QUEUED_FOR_PAY)
+            if queue.within_capacity:
+                payment = get_payment(int(request.POST['pay_with']))(subscription)
+                assert isinstance(payment, PaymentBase)
+                return payment.start_payment(request, subscription.price)
+        return render(request, 'esupa/view.html', context)
+    elif request.POST:
+        # Avoid an infinite loop. We shouldn't be receiving a POST in this view without a preexisting Subscription.
+        raise SuspiciousOperation
+    else:
+        return edit(request, slug)  # may call view(); it's probably a bug if it does
+
+
+@named('esupa-edit')
+@login_required
+def edit(request: HttpRequest, slug=None) -> HttpResponse:
+    subscription = _get_subscription(slug, request.user)
+    if subscription.state > SubsState.QUEUED_FOR_PAY:
+        return view(request, slug)  # may call edit(); it's probably a bug if it does
+    if not subscription.id:
+        subscription.email = subscription.user.email
+    form = SubscriptionForm(data=request.POST or None, instance=subscription)
+    if request.POST and form.is_valid() and SubsState.NEW <= subscription.state <= SubsState.QUEUED_FOR_PAY:
+        form.save()
+        s = map(str.lower, (subscription.full_name, subscription.email, subscription.document, subscription.badge))
+        b = tuple(map(str.lower, filter(bool, subscription.event.data_to_be_checked.splitlines())))
+        acceptable = True not in (t in d for d in s for t in b)
+        subscription.state = SubsState.ACCEPTABLE if acceptable else SubsState.VERIFYING_DATA
+        subscription.save()
+        if not acceptable:
+            Notifier(subscription).staffer_action_required()
+        return view(request, slug)  # may call edit(); it's probably a bug if it does
+    else:
+        return render(request, 'esupa/edit.html', {
+            'form': form,
+            'event': subscription.event,
+            'subscription': subscription,
+        })
+
+
+@named('esupa-trans-doc')
+@login_required
+def transaction_document(request: HttpRequest, tid) -> HttpResponse:
+    # Add ETag generation & verification… maybe… eventually…
+    trans = Transaction.objects.get(id=tid)
+    if trans is None or not trans.document:
+        raise Http404("No such document.")
+    if not request.user.is_staff and trans.subscription.user != request.user:
+        return PermissionDenied
+    response = HttpResponse(trans.document, content_type=trans.mimetype)
+    return response
+
+
+@named('esupa-cron')
+def cron_view(_, secret) -> HttpResponse:
+    if secret != settings.ESUPA_CRON_SECRET:
+        raise SuspiciousOperation
+    cron()
+    return BLANK_PAGE
+
+
+@named('esupa-pay')
+@csrf_exempt
+def paying(request: HttpRequest, code) -> HttpResponse:
+    resolved_view = get_payment(int(code)).class_view
+    return resolved_view(request) or BLANK_PAGE
+
+
+class EsupaListView(ListView):
+    name = ''
+
+    @classonlymethod
+    def as_view(cls, **initkwargs):
+        view_ = login_required(super().as_view(**initkwargs))
+        view_.name = cls.name
+        return view_
+
+    def dispatch(self, request, *args, **kwargs):
+        user = request.user
+        assert isinstance(user, User)
+        if not user.is_staff:
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        return super().get_context_data(user=self.request.user, **kwargs)
+
+
+class EventList(EsupaListView):
+    model = Event
+    name = 'esupa-check-all'
+
+
+class SubscriptionList(EsupaListView):
+    model = Subscription
+    name = 'esupa-check-event'
+    _event = None
+
+    @property
+    def event(self) -> Event:
+        if not self._event:
+            self._event = Event.objects.get(id=int(self.args[0]))
+        return self._event
+
+    def get_queryset(self):
+        return self.event.subscription_set.order_by('-state')
+
+    def get_context_data(self, **kwargs):
+        return super().get_context_data(event=self.event, **kwargs)
+
+
+class TransactionList(EsupaListView):
+    model = Transaction
+    name = 'esupa-check-docs'
+    _event = None
+    _subscription = None
+
+    @property
+    def event(self) -> Event:
+        if not self._event:
+            self._event = self.subscription.event
+        return self._event
+
+    @property
+    def subscription(self) -> Subscription:
+        if not self._subscription:
+            self._subscription = Subscription.objects.get(id=int(self.args[0]))
+            self._event = self._subscription.event
+        return self._subscription
+
+    def get_context_data(self, **kwargs):
+        return super().get_context_data(event=self.event, sub=self.subscription, **kwargs)

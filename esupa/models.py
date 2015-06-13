@@ -1,4 +1,16 @@
 # coding=utf-8
+#
+# Copyright 2015, Abando.com.br
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+# compliance with the License. You may obtain a copy of the License at
+#
+#        http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software distributed under the License is
+# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and limitations under the License.
+#
 from datetime import date, timedelta
 from decimal import Decimal
 from logging import getLogger
@@ -9,6 +21,7 @@ from django.utils.timezone import now
 
 log = getLogger(__name__)
 PriceField = lambda: models.DecimalField(max_digits=7, decimal_places=2)
+payment_names = {}  # Will be filled by payment/__init__.py
 
 
 class Enum:
@@ -38,19 +51,15 @@ class Enum:
     def __str__(self):
         return self._descr
 
+    @property
+    def value(self):
+        return self._value
+
+    def __int__(self):
+        return self._value
+
     def __repr__(self):
         return '%s(%d)' % (str(type(self)), self._value)
-
-
-class PmtMethod(Enum):
-    CASH = 0
-    DEPOSIT = 1
-    PAGSEGURO = 2
-    choices = (
-        (CASH, 'Em Mãos'),
-        (DEPOSIT, 'Depósito'),
-        (PAGSEGURO, 'PagSeguro'),
-    )
 
 
 class SubsState(Enum):
@@ -59,6 +68,7 @@ class SubsState(Enum):
     QUEUED_FOR_PAY = 33
     EXPECTING_PAY = 55
     VERIFYING_PAY = 66
+    PARTIALLY_PAID = 77
     UNPAID_STAFF = 88
     CONFIRMED = 99
     VERIFYING_DATA = -1
@@ -69,6 +79,7 @@ class SubsState(Enum):
         (QUEUED_FOR_PAY, 'Em fila para poder pagar'),
         (EXPECTING_PAY, 'Aguardando pagamento'),
         (VERIFYING_PAY, 'Verificando pagamento'),
+        (PARTIALLY_PAID, 'Parcialmente paga'),
         (UNPAID_STAFF, 'Tripulante não pago'),
         (CONFIRMED, 'Confirmada'),
         (VERIFYING_DATA, 'Verificando dados'),
@@ -85,9 +96,9 @@ class Event(models.Model):
     price = PriceField()
     capacity = models.IntegerField()
     subs_open = models.BooleanField(default=False)
-    subs_start_at = models.DateTimeField(null=True, blank=True)
+    subs_toggle = models.DateTimeField(null=True, blank=True)
     sales_open = models.BooleanField(default=False)
-    sales_start_at = models.DateTimeField(null=True, blank=True)
+    sales_toggle = models.DateTimeField(null=True, blank=True)
     deposit_info = models.TextField(blank=True)
     payment_wait_hours = models.IntegerField(default=48)
     data_to_be_checked = models.TextField(blank=True)
@@ -118,6 +129,14 @@ class Event(models.Model):
             return date(self.starts_at.year - self.min_age, self.starts_at.month, self.starts_at.day)
         else:
             return now().date()
+
+    def cron(self, present):
+        if self.subs_toggle and self.subs_toggle < present:
+            self.subs_toggle = None
+            self.subs_open = not self.subs_open
+        if self.sales_toggle and self.sales_toggle < present:
+            self.sales_toggle = None
+            self.sales_open = not self.sales_open
 
 
 class Optional(models.Model):
@@ -154,8 +173,6 @@ class Subscription(models.Model):
     optionals = models.ManyToManyField(Optional, blank=True)
     agreed = models.BooleanField(default=False)
     position = models.IntegerField(null=True, blank=True)
-    paid = models.BooleanField(default=False)
-    paid_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return self.badge
@@ -163,6 +180,9 @@ class Subscription(models.Model):
     def raise_state(self, state):
         if self.state < state:
             self.state = state
+            return True
+        else:
+            return False
 
     @property
     def waiting(self) -> bool:
@@ -180,6 +200,15 @@ class Subscription(models.Model):
         return self.event.price + (self.optionals.aggregate(models.Sum('price'))['price__sum'] or 0)
 
     @property
+    def paid(self) -> Decimal:
+        return self.transaction_set.filter(accepted=True, ended_at__isnull=False) \
+                   .aggregate(models.Sum('amount'))['amount__sum'] or Decimal(0)
+
+    @property
+    def owing(self) -> Decimal:
+        return self.price - self.paid
+
+    @property
     def str_state(self) -> str:
         return str(SubsState(self.state))
 
@@ -189,7 +218,7 @@ class Transaction(models.Model):
     payee = models.CharField(max_length=10, blank=True)
     value = PriceField()
     created_at = models.DateTimeField(auto_now=True)
-    method = PmtMethod.field(default=PmtMethod.CASH)
+    method = models.SmallIntegerField(default=0)
     remote_identifier = models.CharField(max_length=50, blank=True)
     mimetype = models.CharField(max_length=255, blank=True)
     document = models.BinaryField(null=True)
@@ -200,24 +229,30 @@ class Transaction(models.Model):
     ended_at = models.DateTimeField(null=True, blank=True)
 
     def end(self, sucessfully) -> bool:
-        """Closes a transaction, and will propagate the appropriate changes to the belonging subscription.
+        """
+        Closes a transaction, and will propagate the appropriate changes to the belonging subscription.
 
-        :return bool: Whether the state of the subscription was changed."""
+        :return bool: Whether the state of the subscription was changed.
+        """
         self.accepted = sucessfully
         if not self.ended_at:
             self.ended_at = now()
         self.save()
         subscription = self.subscription
         if subscription.state >= SubsState.CONFIRMED:
-            # A confirmed subscription can't be touched.
+            # A confirmed subscription can't be touched by a transaction. (maybe a dispute?)
             return False
         elif sucessfully:
             # Transaction was accepted.
-            subscription.raise_state(SubsState.CONFIRMED)
+            new_state = SubsState.PARTIALLY_PAID if subscription.owing else SubsState.CONFIRMED
+            changed = subscription.raise_state(new_state)
             subscription.save()
-            return True
+            return changed
+        elif subscription.state >= SubsState.PARTIALLY_PAID:
+            # Rejected transaction, but staff and partial payments will remain in their position until manually removed.
+            return False
         elif subscription.transaction_set.filter(ended_at__isnull=True, method=self.method).exists():
-            # Pending transaction of this type was rejected, wasn't the last one.
+            # Pending transaction of this type was rejected. It wasn't the last one, so let's keep waiting.
             return False
         else:
             # Last pending transaction of this type was rejected.
@@ -229,4 +264,4 @@ class Transaction(models.Model):
 
     @property
     def str_method(self):
-        return str(PmtMethod(self.method))
+        return payment_names.get(self.method)
