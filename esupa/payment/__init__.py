@@ -39,7 +39,7 @@ def load_submodules():
                 assert issubclass(subclass, PaymentBase)
                 _payment_methods[subclass.CODE] = subclass
                 payment_names[subclass.CODE] = subclass.TITLE
-                log.info('Loaded payment module %s: code=%d, title=%s', subclass.CODE, modname, subclass.TITLE)
+                log.info('Loaded payment module %s: code=%d, title=%s', modname, subclass.CODE, subclass.TITLE)
             else:
                 log.warn('Missing class Payment in module: %s', modname)
         except ImportError:
