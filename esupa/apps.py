@@ -11,10 +11,18 @@
 # distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 #
-__author__ = 'Ekevoo'
-__copyright__ = 'Copyright 2015, Abando.com.br'
-__license__ = 'Apache License, Version 2.0'
-__version__ = '1.1a1'  # PEP386
+from django.apps import AppConfig
 
-# https://docs.djangoproject.com/en/1.8/ref/applications/#application-configuration
-default_app_config = __name__ + '.apps.EsupaApp'
+
+class EsupaApp(AppConfig):
+    name = __name__
+    verbose_name = 'Event Subscription and Payment'
+    _ready = False
+
+    def ready(self):
+        if EsupaApp._ready:
+            return
+        from . import payment
+
+        payment.load_submodules()
+        EsupaApp._ready = True
