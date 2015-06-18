@@ -26,7 +26,7 @@ _payment_methods = {}
 get_payment = _payment_methods.get
 
 
-def load_submodules():
+def load_submodules(app_config):
     if _payment_methods:
         return
     for loader, modname, ispkg in walk_packages(__path__):
@@ -39,16 +39,22 @@ def load_submodules():
                 assert issubclass(subclass, PaymentBase)
                 _payment_methods[subclass.CODE] = subclass
                 payment_names[subclass.CODE] = subclass.TITLE
+                subclass.static_init(app_config, module)
                 log.info('Loaded payment module %s: code=%d, title=%s', modname, subclass.CODE, subclass.TITLE)
             else:
                 log.warn('Missing class Payment in module: %s', modname)
-        except ImportError:
+        except (ImportError, SyntaxError) as e:
             log.warn('Failed to import payment module: %s', modname)
+            log.debug(e, exc_info=True)
 
 
 class PaymentBase:
     CODE = 0
     TITLE = ''
+
+    @classmethod
+    def static_init(cls, app_config, my_module):
+        pass
 
     _subscription = None
     _transaction = None

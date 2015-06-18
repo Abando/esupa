@@ -24,5 +24,5 @@ class EsupaApp(AppConfig):
             return
         from . import payment
 
-        payment.load_submodules()
+        payment.load_submodules(self)
         EsupaApp._ready = True
