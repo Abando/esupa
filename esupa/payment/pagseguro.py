@@ -13,7 +13,6 @@
 #
 from logging import getLogger
 
-from django.core.urlresolvers import reverse
 from django.http import HttpRequest
 from pagseguro.api import PagSeguroApi, PagSeguroItem  # sudo -H pip3 install django-pagseguro2
 from pagseguro.settings import TRANSACTION_STATUS
@@ -23,7 +22,6 @@ from ..models import SubsState, Transaction
 from ..notify import Notifier
 from ..queue import QueueAgent
 from ..utils import FunctionDictionary, prg_redirect
-from ..views import paying
 
 log = getLogger(__name__)
 
@@ -38,7 +36,7 @@ class PaymentMethod(PaymentBase):
         self.transaction.value = amount
         self.transaction.save()
         api.params['reference'] = self.transaction.id
-        api.params['notificationURL'] = request.build_absolute_uri(reverse(paying.name, args=[self.CODE]))
+        api.params['notificationURL'] = self._my_pay_url(request)
         log.debug('Set notification URI: %s', api.params['notificationURL'])
         api.add_item(PagSeguroItem(id=self.transaction.id, description=event.name, amount=amount, quantity=1))
         data = api.checkout()

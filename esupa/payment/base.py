@@ -14,11 +14,13 @@
 from importlib import import_module
 from logging import getLogger
 from pkgutil import walk_packages
-from django.db.models import QuerySet
 
+from django.core.urlresolvers import reverse
+from django.db.models import QuerySet
 from django.http import HttpResponse, HttpRequest
 
 from ..models import Transaction, Subscription, payment_names
+from ..views import paying, view
 
 log = getLogger(__name__)
 
@@ -59,13 +61,16 @@ class PaymentBase:
     _subscription = None
     _transaction = None
 
-    def __init__(self, subscription_or_transaction):
-        if not subscription_or_transaction:
+    def __init__(self, subscription_or_transaction_or_remote_id):
+        if not subscription_or_transaction_or_remote_id:
             pass  # nothing to do
-        elif isinstance(subscription_or_transaction, Subscription):
-            self.subscription = subscription_or_transaction
-        elif isinstance(subscription_or_transaction, Transaction):
-            self.transaction = subscription_or_transaction
+        elif isinstance(subscription_or_transaction_or_remote_id, Subscription):
+            self.subscription = subscription_or_transaction_or_remote_id
+        elif isinstance(subscription_or_transaction_or_remote_id, Transaction):
+            self.transaction = subscription_or_transaction_or_remote_id
+        elif isinstance(subscription_or_transaction_or_remote_id, str):
+            self.transaction = Transaction.objects.get(
+                method=self.CODE, remote_identifier=subscription_or_transaction_or_remote_id)
         else:
             raise ValueError
 
@@ -115,3 +120,9 @@ class PaymentBase:
     @classmethod
     def class_view(cls, request: HttpRequest) -> HttpResponse:
         raise NotImplementedError
+
+    def _my_pay_url(self, request: HttpRequest) -> str:
+        return request.build_absolute_uri(reverse(paying.name, args=(self.CODE,)))
+
+    def _my_view_url(self, request: HttpRequest):
+        return request.build_absolute_uri(reverse(view.name, args=(self.subscription.event.slug,)))

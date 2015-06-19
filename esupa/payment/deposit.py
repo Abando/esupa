@@ -15,7 +15,6 @@ from logging import getLogger
 
 from django import forms
 from django.core.exceptions import PermissionDenied, SuspiciousOperation
-from django.core.urlresolvers import reverse
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 from django.utils.timezone import now
@@ -23,7 +22,6 @@ from django.utils.timezone import now
 from .base import PaymentBase
 from ..models import Transaction, SubsState
 from ..utils import prg_redirect
-from ..views import view
 
 log = getLogger(__name__)
 
@@ -54,13 +52,14 @@ class PaymentMethod(PaymentBase):
         elif 'upload' in request.FILES:
             if transaction.subscription.state == SubsState.QUEUED_FOR_PAY:
                 raise PermissionDenied
-            cls.put_file(transaction, request.FILES['upload'])
-            return prg_redirect(reverse(view.name, args=(transaction.subscription.event.slug,)))
+            payment = PaymentMethod(transaction)
+            payment.put_file(request.FILES['upload'])
+            return prg_redirect(payment._my_view_url(request))
         else:
             return DepositForm(transaction, data=request.POST, files=request.FILES)
 
-    @staticmethod
-    def put_file(transaction: Transaction, upload):
+    def put_file(self, upload):
+        transaction = self.transaction
         transaction.document = upload.read()
         transaction.mimetype = upload.content_type or 'application/octet-stream'
         transaction.filled_at = now()
