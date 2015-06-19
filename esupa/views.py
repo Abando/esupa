@@ -27,7 +27,7 @@ from django.views.generic import ListView
 from .forms import SubscriptionForm
 from .models import Event, Subscription, SubsState, Transaction, payment_names
 from .notify import Notifier
-from .payment import PaymentBase, get_payment
+from .payment.base import PaymentBase, get_payment
 from .queue import cron, QueueAgent
 from .utils import named
 

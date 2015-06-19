@@ -13,13 +13,12 @@
 #
 from logging import getLogger
 
-# sudo -H pip3 install django-pagseguro2
 from django.core.urlresolvers import reverse
 from django.http import HttpRequest
-from pagseguro.api import PagSeguroApi, PagSeguroItem
+from pagseguro.api import PagSeguroApi, PagSeguroItem  # sudo -H pip3 install django-pagseguro2
 from pagseguro.settings import TRANSACTION_STATUS
 
-from . import PaymentBase
+from .base import PaymentBase
 from ..models import SubsState, Transaction
 from ..notify import Notifier
 from ..queue import QueueAgent
@@ -29,7 +28,7 @@ from ..views import paying
 log = getLogger(__name__)
 
 
-class Payment(PaymentBase):
+class PaymentMethod(PaymentBase):
     CODE = 2
     TITLE = 'PagSeguro'
 
@@ -57,7 +56,7 @@ class Payment(PaymentBase):
             data = PagSeguroApi().get_notification(notification_code)
             tid = int(data['reference'])
             transaction = Transaction.objects.get(id=tid)
-            payment = Payment(transaction)
+            payment = PaymentMethod(transaction)
             payment.callback_view(data)
 
     def callback_view(self, data: dict):

@@ -34,15 +34,15 @@ def load_submodules(app_config):
         try:
             module = import_module('.'.join((__name__, modname)))
             log.debug('Imported payment module: %s', modname)
-            if hasattr(module, 'Payment'):
-                subclass = module.Payment
+            if hasattr(module, 'PaymentMethod'):
+                subclass = module.PaymentMethod
                 assert issubclass(subclass, PaymentBase)
                 _payment_methods[subclass.CODE] = subclass
                 payment_names[subclass.CODE] = subclass.TITLE
                 subclass.static_init(app_config, module)
                 log.info('Loaded payment module %s: code=%d, title=%s', modname, subclass.CODE, subclass.TITLE)
             else:
-                log.warn('Missing class Payment in module: %s', modname)
+                log.warn('Missing class PaymentMethod in module: %s', modname)
         except (ImportError, SyntaxError) as e:
             log.warn('Failed to import payment module: %s', modname)
             log.debug(e, exc_info=True)

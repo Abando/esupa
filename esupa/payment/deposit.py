@@ -20,7 +20,7 @@ from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 from django.utils.timezone import now
 
-from . import PaymentBase
+from .base import PaymentBase
 from ..models import Transaction, SubsState
 from ..utils import prg_redirect
 from ..views import view
@@ -28,7 +28,7 @@ from ..views import view
 log = getLogger(__name__)
 
 
-class Payment(PaymentBase):
+class PaymentMethod(PaymentBase):
     CODE = 1
     TITLE = 'Depósito Bancário'
 
