@@ -21,9 +21,18 @@ from django.http.response import HttpResponseRedirectBase
 class FunctionDictionary(dict):
     """ A dictionary that includes decorators to add functions to it as they're declared. """
 
+    def __init__(self, default_function=None, **kwargs):
+        """
+        The constructor can be used normally or as a decorator. If used as a decorator, it affects the get() method.
+
+        :param default_function: Function to be given by ``get(key)`` if ``key`` is not found.
+        """
+        self._default = default_function
+        super().__init__(**kwargs)
+
     def register(self, *keys):
         """
-        This mode is to anonymize functions. Use it as follows:
+        Adds the decorated function to the dictionary. Use it as follows:
 
         .. code-block::
 
@@ -34,6 +43,7 @@ class FunctionDictionary(dict):
 
             my_func_dict['key1'](1) == my_func_dict['key2'](1)
         """
+
         def x(func) -> FunctionDictionary:
             for key in keys:
                 self[key] = func
@@ -41,26 +51,13 @@ class FunctionDictionary(dict):
 
         return x
 
-    def __call__(self, func):
-        """
-        This mode will keep declared functions visible as declared.
-        It'll only add them to the dictionary using their name as key:
-
-        .. code-block::
-
-            my_func_dict = FunctionDictionary()
-            @my_func_dict
-            def as_double(int_arg):
-                return int_arg * 2
-
-            my_func_dict['as_double'](1) == as_double(1)
-        """
-        self[func.__name__] = func
-        return func
+    def get(self, key, default=None):
+        return super().get(key, default or self._default)
 
 
 def named(name: str):
     """ A decorator to add a name to a function. """
+
     def apply_decoration(func):
         func.name = name
         return func
