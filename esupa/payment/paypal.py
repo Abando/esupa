@@ -138,8 +138,8 @@ class PaymentMethod(PaymentBase):
                                          'currency': 'BRL'},
                               'description': event.name}],
             'payer': {'payment_method': 'paypal'},
-            'redirect_urls': {'return_url': self._my_pay_url(request),
-                              'cancel_url': self._my_view_url(request)},
+            'redirect_urls': {'return_url': self.my_pay_url(request),
+                              'cancel_url': self.my_view_url(request)},
             'intent': 'sale'})
         result = loads(payment.create())
         if result:
@@ -162,7 +162,7 @@ class PaymentMethod(PaymentBase):
         payment.callback_view(result)
         # This is actually the user here, not a callback bot! So we must return to base.
         # TODO: What if the user never returns home after paying? Should we poll pending transactions?
-        return prg_redirect(payment._my_view_url(request))
+        return prg_redirect(payment.my_view_url(request))
 
     def callback_view(self, data: dict):
         try:

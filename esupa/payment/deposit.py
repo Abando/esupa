@@ -54,7 +54,7 @@ class PaymentMethod(PaymentBase):
                 raise PermissionDenied
             payment = PaymentMethod(transaction)
             payment.put_file(request.FILES['upload'])
-            return prg_redirect(payment._my_view_url(request))
+            return prg_redirect(payment.my_view_url(request))
         else:
             return DepositForm(transaction, data=request.POST, files=request.FILES)
 

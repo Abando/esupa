@@ -36,7 +36,7 @@ class PaymentMethod(PaymentBase):
         self.transaction.value = amount
         self.transaction.save()
         api.params['reference'] = self.transaction.id
-        api.params['notificationURL'] = self._my_pay_url(request)
+        api.params['notificationURL'] = self.my_pay_url(request)
         log.debug('Set notification URI: %s', api.params['notificationURL'])
         api.add_item(PagSeguroItem(id=self.transaction.id, description=event.name, amount=amount, quantity=1))
         data = api.checkout()

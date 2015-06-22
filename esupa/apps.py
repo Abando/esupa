@@ -22,7 +22,7 @@ class EsupaApp(AppConfig):
     def ready(self):
         if EsupaApp._ready:
             return
-        from .payment.base import load_submodules
+        from .payment import load_submodules
 
         load_submodules(self)
         EsupaApp._ready = True

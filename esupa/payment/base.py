@@ -11,43 +11,16 @@
 # distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 #
-from importlib import import_module
 from logging import getLogger
-from pkgutil import walk_packages
 
 from django.core.urlresolvers import reverse
 from django.db.models import QuerySet
 from django.http import HttpResponse, HttpRequest
 
-from ..models import Transaction, Subscription, payment_names
-from ..views import paying, view
+from ..models import Transaction, Subscription
 
 log = getLogger(__name__)
-
-_payment_methods = {}
-get_payment = _payment_methods.get
-
-
-def load_submodules(app_config):
-    if _payment_methods:
-        return
-    for loader, modname, ispkg in walk_packages(__path__):
-        log.info('Found sub%s %s' % ('package' if ispkg else 'module', modname))
-        try:
-            module = import_module('.'.join((__name__, modname)))
-            log.debug('Imported payment module: %s', modname)
-            if hasattr(module, 'PaymentMethod'):
-                subclass = module.PaymentMethod
-                assert issubclass(subclass, PaymentBase)
-                _payment_methods[subclass.CODE] = subclass
-                payment_names[subclass.CODE] = subclass.TITLE
-                subclass.static_init(app_config, module)
-                log.info('Loaded payment module %s: code=%d, title=%s', modname, subclass.CODE, subclass.TITLE)
-            else:
-                log.warn('Missing class PaymentMethod in module: %s', modname)
-        except (ImportError, SyntaxError) as e:
-            log.warn('Failed to import payment module: %s', modname)
-            log.debug(e, exc_info=True)
+payment_methods = {}
 
 
 class PaymentBase:
@@ -121,8 +94,16 @@ class PaymentBase:
     def class_view(cls, request: HttpRequest) -> HttpResponse:
         raise NotImplementedError
 
-    def _my_pay_url(self, request: HttpRequest) -> str:
+    def my_pay_url(self, request: HttpRequest) -> str:
+        from ..views import paying
+
         return request.build_absolute_uri(reverse(paying.name, args=(self.CODE,)))
 
-    def _my_view_url(self, request: HttpRequest):
+    def my_view_url(self, request: HttpRequest):
+        from ..views import view
+
         return request.build_absolute_uri(reverse(view.name, args=(self.subscription.event.slug,)))
+
+
+def get_payment(code: int) -> type:
+    return payment_methods[code]
