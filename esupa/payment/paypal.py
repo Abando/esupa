@@ -124,7 +124,10 @@ class PaymentMethod(PaymentBase):
 
     @classmethod
     def static_init(cls, app_config, my_module):
-        configure(settings.PAYPAL)  # https://developer.paypal.com/developer/applications
+        if hasattr(settings, 'PAYPAL'):
+            configure(settings.PAYPAL)  # https://developer.paypal.com/developer/applications
+        else:
+            raise ImportError
         # Sample settings:
         _ = {'mode': 'sandbox',
              'client_id': 'AQkquBDf1zctJOWGKWUEtKXm6qVhueUEMvXO_-MCI4DQQ4-LWvkDLIN2fGsd',
