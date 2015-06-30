@@ -14,15 +14,15 @@
 from django.apps import AppConfig
 
 
-class EsupaApp(AppConfig):
-    name = __name__
+class EsupaConfig(AppConfig):
+    name = __name__[:__name__.rindex('.')]
     verbose_name = 'Event Subscription and Payment'
     _ready = False
 
     def ready(self):
-        if EsupaApp._ready:
+        if EsupaConfig._ready:
             return
         from .payment import load_submodules
 
         load_submodules(self)
-        EsupaApp._ready = True
+        EsupaConfig._ready = True

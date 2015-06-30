@@ -17,4 +17,4 @@ __license__ = 'Apache License, Version 2.0'
 __version__ = '1.1a1'  # PEP386
 
 # https://docs.djangoproject.com/en/1.8/ref/applications/#application-configuration
-default_app_config = __name__ + '.apps.EsupaApp'
+default_app_config = __name__ + '.apps.EsupaConfig'
