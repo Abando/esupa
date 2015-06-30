@@ -16,12 +16,20 @@ from decimal import Decimal
 from logging import getLogger
 
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.timezone import now
 
 log = getLogger(__name__)
 PriceField = lambda: models.DecimalField(max_digits=7, decimal_places=2)
 payment_names = {}  # Will be filled by payment/base.py
+
+
+def slug_blacklist_validator(target):
+    from .urls import slug_blacklist
+
+    if target in slug_blacklist:
+        raise ValidationError('To avoid name clashes, these slugs are not allowed: ' + ', '.join(slug_blacklist))
 
 
 class Enum:
@@ -89,7 +97,7 @@ class SubsState(Enum):
 
 class Event(models.Model):
     name = models.CharField(max_length=20)
-    slug = models.SlugField(blank=True)
+    slug = models.SlugField(validators=[slug_blacklist_validator])
     agreement_url = models.URLField(blank=True)
     starts_at = models.DateTimeField()
     min_age = models.IntegerField(default=0)

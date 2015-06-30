@@ -29,38 +29,42 @@ from .models import Event, Subscription, SubsState, Transaction, payment_names
 from .notify import Notifier
 from .payment.base import PaymentBase, get_payment
 from .queue import cron, QueueAgent
-from .utils import named
+from .utils import named, prg_redirect
 
 log = getLogger(__name__)
 
 BLANK_PAGE = HttpResponse()
 
 
+@named('esupa-splash')
+@login_required
+def redirect_to_view_or_edit(request: HttpRequest, slug: str) -> HttpResponse:
+    try:
+        event = Event.objects.get(slug=slug)
+    except Event.DoesNotExist:
+        look_to_the_future = Event.objects.filter(starts_at__gt=now()).order_by('starts_at')
+        look_to_the_past = Event.objects.filter(starts_at__lt=now()).order_by('-starts_at')
+        event = look_to_the_future.first() or look_to_the_past.first()
+    if event:
+        exists = Subscription.objects.filter(event=event, user=request.user).exists()
+        return prg_redirect(view.name if exists else edit.name, event.slug)
+    else:
+        raise Http404('There is no event. Create one in /admin/')
+
+
 def _get_subscription(event_slug: str, user: User) -> Subscription:
     """Takes existing subscription if available, creates a new one otherwise."""
-    if event_slug:
-        event = Event.objects.get(slug=event_slug)
-    else:
-        # find closest event in the future
-        event = Event.objects.filter(starts_at__gt=now()).order_by('starts_at').first()
-        if not event:
-            # find closest event in the past
-            event = Event.objects.filter(starts_at__lt=now()).order_by('-starts_at').first()
-        if not event:
-            raise Http404('There is no event. Create one in /admin/')
-    queryset = Subscription.objects
-    queryset = queryset.filter(event=event, user=user)
-    result = queryset.first()
-    if not result:
-        result = Subscription(event=event, user=user)
-    elif result.state == SubsState.DENIED:
+    event = Event.objects.get(slug=event_slug)
+    kwargs = dict(event=event, user=user)
+    subscription = Subscription.objects.filter(**kwargs).first() or Subscription(**kwargs)
+    if subscription.state == SubsState.DENIED:
         raise PermissionDenied
-    return result
+    return subscription
 
 
 @named('esupa-view')
 @login_required
-def view(request: HttpRequest, slug=None) -> HttpResponse:
+def view(request: HttpRequest, slug: str) -> HttpResponse:
     subscription = _get_subscription(slug, request.user)
     if subscription.id:
         context = {
@@ -88,7 +92,7 @@ def view(request: HttpRequest, slug=None) -> HttpResponse:
 
 @named('esupa-edit')
 @login_required
-def edit(request: HttpRequest, slug=None) -> HttpResponse:
+def edit(request: HttpRequest, slug: str) -> HttpResponse:
     subscription = _get_subscription(slug, request.user)
     if subscription.state > SubsState.QUEUED_FOR_PAY:
         return view(request, slug)  # may call edit(); it's probably a bug if it does
@@ -174,7 +178,7 @@ class SubscriptionList(EsupaListView):
     @property
     def event(self) -> Event:
         if not self._event:
-            self._event = Event.objects.get(id=int(self.args[0]))
+            self._event = Event.objects.get(slug=self.args[0])
         return self._event
 
     def get_queryset(self):

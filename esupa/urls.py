@@ -23,15 +23,15 @@ def url(regex, view, kwargs=None, name=None, prefix=''):
 
 
 urlpatterns = [
-    url(r'^view$', views.view),
-    url(r'^view/(.*)$', views.view),
-    url(r'^edit$', views.edit),
-    url(r'^edit/(.*)$', views.edit),
     url(r'^pay/(.*)$', views.paying),
     url(r'^doc/(.+)$', views.transaction_document),
     url(r'^cron/(.+)$', views.cron_view),
     url(r'^check$', views.EventList.as_view()),
-    url(r'^check/e/(\d+)$', views.SubscriptionList.as_view()),
-    url(r'^check/d/(\d+)$', views.TransactionList.as_view()),
-    url(r'^(.*)$', views.view),
+    url(r'^check/(\d+)$', views.TransactionList.as_view()),
+    url(r'^([-a-zA-Z0-9_]+)/view$', views.view),
+    url(r'^([-a-zA-Z0-9_]+)/edit$', views.edit),
+    url(r'^([-a-zA-Z0-9_]+)/check$', views.SubscriptionList.as_view()),
+    url(r'^([-a-zA-Z0-9_]*)/?$', views.redirect_to_view_or_edit),
 ]
+
+slug_blacklist = tuple('pay doc cron check'.split())

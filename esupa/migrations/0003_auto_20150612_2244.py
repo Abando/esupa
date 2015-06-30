@@ -4,6 +4,14 @@ from __future__ import unicode_literals
 from django.db import models, migrations
 
 
+def slug_blacklist_validator_loader():
+    try:
+        from ..models import slug_blacklist_validator
+    except ImportError:
+        slug_blacklist_validator = lambda target: None
+    return slug_blacklist_validator
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -20,6 +28,11 @@ class Migration(migrations.Migration):
             model_name='event',
             old_name='subs_start_at',
             new_name='subs_toggle',
+        ),
+        migrations.AlterField(
+            model_name='event',
+            name='slug',
+            field=models.SlugField(validators=[slug_blacklist_validator_loader()]),
         ),
         migrations.RemoveField(
             model_name='subscription',
