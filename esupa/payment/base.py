@@ -13,23 +13,28 @@
 #
 from logging import getLogger
 
+from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.db.models import QuerySet
 from django.http import HttpResponse, HttpRequest
 
+from . import payment_methods, NoConfiguration
 from ..models import Transaction, Subscription
 
 log = getLogger(__name__)
-payment_methods = {}
 
 
 class PaymentBase:
     CODE = 0
     TITLE = ''
+    CONFIGURATION_KEYS = ()
 
     @classmethod
     def static_init(cls, app_config, my_module):
-        pass
+        is_missing = lambda key: not hasattr(settings, key)
+        missing = tuple(filter(is_missing, cls.CONFIGURATION_KEYS))
+        if missing:
+            raise NoConfiguration(missing)
 
     _subscription = None
     _transaction = None

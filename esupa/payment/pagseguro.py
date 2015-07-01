@@ -29,6 +29,7 @@ log = getLogger(__name__)
 class PaymentMethod(PaymentBase):
     CODE = 2
     TITLE = 'PagSeguro'
+    CONFIGURATION_KEYS = ('PAGSEGURO_EMAIL', 'PAGSEGURO_TOKEN')
 
     def start_payment(self, request, amount):
         event = self.subscription.event

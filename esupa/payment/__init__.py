@@ -14,32 +14,39 @@
 from logging import getLogger
 
 log = getLogger(__name__)
+payment_methods = {}
+payment_names = {}
 
 
 def load_submodules(app_config):
     from importlib import import_module
     from pkgutil import walk_packages
-    from .base import PaymentBase, payment_methods
-    from ..models import payment_names
 
     if payment_methods:
         return
     for path in __path__:
         log.debug('Will traverse %s', path)
     for loader, modname, ispkg in walk_packages(__path__):
-        log.info('Found sub%s %s' % ('package' if ispkg else 'module', modname))
+        log.debug('Found sub%s %s' % ('package' if ispkg else 'module', modname))
         try:
             module = import_module('.'.join((__name__, modname)))
             log.debug('Imported payment module: %s', modname)
             if hasattr(module, 'PaymentMethod'):
                 subclass = module.PaymentMethod
-                assert issubclass(subclass, PaymentBase)
+                subclass.static_init(app_config, module)
                 payment_methods[subclass.CODE] = subclass
                 payment_names[subclass.CODE] = subclass.TITLE
-                subclass.static_init(app_config, module)
-                log.info('Loaded payment module %s: code=%d, title=%s', modname, subclass.CODE, subclass.TITLE)
+                log.info('Payment module %s loaded: code=%d, title=%s', modname, subclass.CODE, subclass.TITLE)
             else:
-                log.warn('No class PaymentMethod in module: %s', modname)
+                log.debug('No class PaymentMethod in module: %s', modname)
+        except NoConfiguration as e:
+            log.info('Payment module %s disabled due to missing configuration: %s', modname, ', '.join(e.keys))
         except (ImportError, SyntaxError) as e:
             log.warn('Failed to import payment module: %s', modname)
             log.debug(e, exc_info=True)
+
+
+class NoConfiguration(Exception):
+    def __init__(self, keys, *args, **kwargs):
+        self.keys = keys
+        super().__init__(*args, **kwargs)

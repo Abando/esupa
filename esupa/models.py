@@ -22,7 +22,6 @@ from django.utils.timezone import now
 
 log = getLogger(__name__)
 PriceField = lambda: models.DecimalField(max_digits=7, decimal_places=2)
-payment_names = {}  # Will be filled by payment/base.py
 
 
 def slug_blacklist_validator(target):
@@ -272,4 +271,6 @@ class Transaction(models.Model):
 
     @property
     def str_method(self):
+        from .payment import payment_names
+
         return payment_names.get(self.method)

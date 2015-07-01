@@ -25,8 +25,9 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import ListView
 
 from .forms import SubscriptionForm
-from .models import Event, Subscription, SubsState, Transaction, payment_names
+from .models import Event, Subscription, SubsState, Transaction
 from .notify import Notifier
+from .payment import payment_names
 from .payment.base import PaymentBase, get_payment
 from .queue import cron, QueueAgent
 from .utils import named, prg_redirect
