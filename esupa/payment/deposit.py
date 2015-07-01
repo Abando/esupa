@@ -36,6 +36,7 @@ class PaymentMethod(PaymentBase):
         self.transaction.value = amount
         self.transaction.save()
         context = {
+            'event': self.subscription.event,
             'sub': self.subscription,
             'trans': self.transaction,
             'form': DepositForm(self.transaction),
