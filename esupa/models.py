@@ -219,6 +219,17 @@ class Subscription(models.Model):
     def str_state(self) -> str:
         return str(SubsState(self.state))
 
+    @property
+    def age_at_event(self) -> int:
+        then = self.event.starts_at
+        if not (self.born and then):
+            return None
+        age = then.year - self.born.year
+        if self.born.month < then.month if self.born.month != then.month else self.born.day <= then.day:
+            return age
+        else:
+            return age - 1
+
 
 class Transaction(models.Model):
     subscription = models.ForeignKey(Subscription)

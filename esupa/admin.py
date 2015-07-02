@@ -13,10 +13,10 @@
 #
 from django.contrib import admin
 
-from .models import *
+from . import models
 
 
-def register_with_tabular_inlines(my_type, *children_types):
+def tabular_inlines_of(*children_types):
     def one_inline(target):
         class MyInline(admin.TabularInline):
             model = target
@@ -24,11 +24,24 @@ def register_with_tabular_inlines(my_type, *children_types):
 
         return MyInline
 
-    class MyAdmin(admin.ModelAdmin):
-        inlines = tuple(map(one_inline, children_types))
-
-    admin.site.register(my_type, MyAdmin)
+    return tuple(map(one_inline, children_types))
 
 
-register_with_tabular_inlines(Event, Optional)
-register_with_tabular_inlines(Subscription, Transaction)
+class EventAdmin(admin.ModelAdmin):
+    list_display = ('name', 'starts_at', 'subs_open', 'sales_open')
+    list_display_links = ('name',)
+    list_filter = ('subs_open', 'sales_open')
+    inlines = tabular_inlines_of(models.Optional)
+    ordering = ('starts_at',)
+
+
+class SubscriptionAdmin(admin.ModelAdmin):
+    list_display = ('event', 'badge', 'state', 'waiting', 'email', 'user', 'age_at_event')
+    list_display_links = ('badge',)
+    list_filter = ('event', 'state')
+    inlines = tabular_inlines_of(models.Transaction)
+    ordering = ('-id',)
+
+
+admin.site.register(models.Event, EventAdmin)
+admin.site.register(models.Subscription, SubscriptionAdmin)
