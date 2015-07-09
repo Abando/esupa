@@ -79,11 +79,11 @@ class Notifier:
 
     def staffer_action_required(self):
         """Sent to staffers, telling them that they're supposed to verify some data."""
-        from .views import verify_event
+        from .views import TransactionList
 
         subject = '[%s] verificar: %s' % (self.s.event.name, self.s.badge)
         body = 'Verificar inscrição #%d (%s): %s' % (
-            self.s.id, self.s.badge, reverse(verify_event.name, args=[self.s.event.id]))
+            self.s.id, self.s.badge, reverse(TransactionList.name, args=[self.s.id]))
         recipients = User.objects.filter(is_staff=True).values_list('email', flat=True)
         _mail(recipients, subject, body)
 
