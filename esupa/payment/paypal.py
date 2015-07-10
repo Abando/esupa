@@ -39,8 +39,8 @@ class PaymentMethod(PaymentBase):
     CONFIGURATION_KEYS = ('PAYPAL',)
 
     @classmethod
-    def static_init(cls, app_config, my_module):
-        super().static_init(app_config, my_module)
+    def static_init(cls):
+        super().static_init()
         configure(settings.PAYPAL)
 
     def start_payment(self, request, amount):

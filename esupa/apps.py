@@ -17,12 +17,3 @@ from django.apps import AppConfig
 class EsupaConfig(AppConfig):
     name = __name__[:__name__.rindex('.')]
     verbose_name = 'Event Subscription and Payment'
-    _ready = False
-
-    def ready(self):
-        if EsupaConfig._ready:
-            return
-        from .payment import load_submodules
-
-        load_submodules(self)
-        EsupaConfig._ready = True

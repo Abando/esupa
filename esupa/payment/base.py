@@ -11,17 +11,22 @@
 # distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 #
+from importlib import import_module
 from logging import getLogger
+from os.path import dirname
+from pkgutil import walk_packages
 
 from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.db.models import QuerySet
 from django.http import HttpResponse, HttpRequest
 
-from . import payment_methods, NoConfiguration
 from ..models import Transaction, Subscription
 
 log = getLogger(__name__)
+
+payment_methods = {}
+payment_names = {}
 
 
 class PaymentBase:
@@ -30,7 +35,7 @@ class PaymentBase:
     CONFIGURATION_KEYS = ()
 
     @classmethod
-    def static_init(cls, app_config, my_module):
+    def static_init(cls):
         is_missing = lambda key: not hasattr(settings, key)
         missing = tuple(filter(is_missing, cls.CONFIGURATION_KEYS))
         if missing:
@@ -111,4 +116,41 @@ class PaymentBase:
 
 
 def get_payment(code: int) -> type:
+    load_submodules()
     return payment_methods[code]
+
+
+def get_payment_names() -> dict:
+    load_submodules()
+    return payment_names
+
+
+def load_submodules():
+    if payment_methods:
+        return
+    path = dirname(__file__)
+    log.debug('Will traverse %s', path)
+    for loader, modname, ispkg in walk_packages([path]):
+        log.debug('Found sub%s %s' % ('package' if ispkg else 'module', modname))
+        try:
+            module = import_module(__name__[:-4] + modname)
+            log.debug('Imported payment module: %s', modname)
+            if hasattr(module, 'PaymentMethod'):
+                subclass = module.PaymentMethod
+                subclass.static_init()
+                payment_methods[subclass.CODE] = subclass
+                payment_names[subclass.CODE] = subclass.TITLE
+                log.info('Payment module %s loaded: code=%d, title=%s', modname, subclass.CODE, subclass.TITLE)
+            else:
+                log.debug('No class PaymentMethod in module: %s', modname)
+        except NoConfiguration as e:
+            log.info('Payment module %s disabled due to missing configuration: %s', modname, ', '.join(e.keys))
+        except (ImportError, SyntaxError) as e:
+            log.warn('Failed to import payment module: %s', modname)
+            log.debug(e, exc_info=True)
+
+
+class NoConfiguration(Exception):
+    def __init__(self, keys, *args, **kwargs):
+        self.keys = keys
+        super().__init__(*args, **kwargs)

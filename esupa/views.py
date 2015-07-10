@@ -27,8 +27,7 @@ from django.views.generic import ListView
 from .forms import SubscriptionForm
 from .models import Event, Subscription, SubsState, Transaction
 from .notify import Notifier
-from .payment import payment_names
-from .payment.base import PaymentBase, get_payment
+from .payment.base import get_payment, get_payment_names
 from .queue import cron, QueueAgent
 from .utils import named, prg_redirect
 
@@ -72,7 +71,7 @@ def view(request: HttpRequest, slug: str) -> HttpResponse:
             'sub': subscription,
             'event': subscription.event,
             'state': SubsState(subscription.state),
-            'pay_buttons': payment_names,
+            'pay_buttons': get_payment_names(),
         }
         if 'pay_with' in request.POST:
             queue = QueueAgent(subscription)
@@ -81,7 +80,6 @@ def view(request: HttpRequest, slug: str) -> HttpResponse:
             subscription.raise_state(SubsState.EXPECTING_PAY if queue.within_capacity else SubsState.QUEUED_FOR_PAY)
             if queue.within_capacity:
                 payment = get_payment(int(request.POST['pay_with']))(subscription)
-                assert isinstance(payment, PaymentBase)
                 return payment.start_payment(request, subscription.price)
         return render(request, 'esupa/view.html', context)
     elif request.POST:
