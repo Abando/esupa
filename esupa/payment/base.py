@@ -145,8 +145,10 @@ def load_submodules():
                 log.debug('No class PaymentMethod in module: %s', modname)
         except NoConfiguration as e:
             log.info('Payment module %s disabled due to missing configuration: %s', modname, ', '.join(e.keys))
-        except (ImportError, SyntaxError) as e:
-            log.warn('Failed to import payment module: %s', modname)
+        except ImportError as e:
+            log.warn('Failed to import payment module %s: %s', modname, e.msg)
+        except SyntaxError as e:
+            log.warn('Failed to import payment module %s', modname)
             log.debug(e, exc_info=True)
 
 
