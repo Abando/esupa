@@ -17,7 +17,7 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied, SuspiciousOperation
-from django.http import HttpResponse, Http404, HttpRequest
+from django.http import HttpResponse, Http404, HttpRequest, JsonResponse
 from django.shortcuts import render
 from django.utils.decorators import classonlymethod
 from django.utils.timezone import now
@@ -142,6 +142,23 @@ def cron_view(_, secret) -> HttpResponse:
 def paying(request: HttpRequest, code) -> HttpResponse:
     resolved_view = get_payment(int(code)).class_view
     return resolved_view(request) or BLANK_PAGE
+
+
+@named('esupa-json-state')
+def json_state(_: HttpRequest, slug: str) -> JsonResponse:
+    try:
+        event = Event.objects.get(slug=slug)
+    except Event.DoesNotExist:
+        return JsonResponse({'exists': False, 'slug': slug})
+    threshold = event.reveal_openings_under
+    potentially = max(0, event.capacity - event.num_confirmed)
+    currently = max(0, potentially - event.num_pending)
+    if threshold > 0:
+        potentially = str(threshold) + '+' if potentially > threshold else str(potentially)
+        currently = str(threshold) + '+' if currently > threshold else str(currently)
+    return JsonResponse({'exists': True, 'slug': slug, 'id': event.id,
+                         'registrationOpen': event.subs_open, 'salesOpen': event.sales_open,
+                         'potentiallyAvailable': potentially, 'currentlyAvailable': currently})
 
 
 class EsupaListView(ListView):

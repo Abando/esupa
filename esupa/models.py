@@ -96,12 +96,13 @@ class SubsState(Enum):
 
 class Event(models.Model):
     name = models.CharField(max_length=20)
-    slug = models.SlugField(validators=[slug_blacklist_validator])
+    slug = models.SlugField(validators=[slug_blacklist_validator], unique=True)
     agreement_url = models.URLField(blank=True)
     starts_at = models.DateTimeField()
     min_age = models.IntegerField(default=0)
     price = PriceField()
     capacity = models.IntegerField()
+    reveal_openings_under = models.IntegerField(default=0, blank=True)
     subs_open = models.BooleanField(default=False)
     subs_toggle = models.DateTimeField(null=True, blank=True)
     sales_open = models.BooleanField(default=False)

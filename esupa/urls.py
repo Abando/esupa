@@ -31,6 +31,7 @@ urlpatterns = [
     url(r'^([-a-zA-Z0-9_]+)/view$', views.view),
     url(r'^([-a-zA-Z0-9_]+)/edit$', views.edit),
     url(r'^([-a-zA-Z0-9_]+)/check$', views.SubscriptionList.as_view()),
+    url(r'^([-a-zA-Z0-9_]+)/json/state$', views.json_state),
     url(r'^([-a-zA-Z0-9_]*)/?$', views.redirect_to_view_or_edit),
 ]
 
