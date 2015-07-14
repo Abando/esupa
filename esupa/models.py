@@ -210,7 +210,7 @@ class Subscription(models.Model):
     @property
     def paid(self) -> Decimal:
         return self.transaction_set.filter(accepted=True, ended_at__isnull=False) \
-                   .aggregate(models.Sum('amount'))['amount__sum'] or Decimal(0)
+                   .aggregate(models.Sum('value'))['value__sum'] or Decimal(0)
 
     @property
     def owing(self) -> Decimal:
