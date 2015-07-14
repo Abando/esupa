@@ -70,15 +70,16 @@ class PaymentMethod(PaymentBase):
             raise SuspiciousOperation
         payment = PaymentMethod(payment_id)
         paypal = Payment.find(payment_id)
-        result = paypal.execute({'payer_id': payer_id})
-        payment.callback_view(result)
+        if not paypal.execute({'payer_id': payer_id}):
+            raise ValueError('PayPal did not complete pmt %s' % payment_id)
+        payment.callback_view(paypal)
         # This is actually the user here, not a callback bot! So we must return to base.
         # TODO: What if the user never returns home after paying? Should we poll pending transactions?
         return prg_redirect(payment.my_view_url(request))
 
     def callback_view(self, data: dict):
         try:
-            self.transaction.notes += '\n[%s] %s %s' % (data['lastEventDate'], data['code'], data['status'])
+            self.transaction.notes += '\n[%s] %s %s' % (data['update_time'], data['id'], data['state'])
             queue = QueueAgent(self.subscription)
             notify = Notifier(self.subscription)
             state = data['state']
@@ -89,11 +90,18 @@ class PaymentMethod(PaymentBase):
             self.subscription.save()
 
     @FunctionDictionary
-    def state_callback(self, **kwargs):
-        log.debug(repr(kwargs))
+    def state_callback(self, state: str, **_):
+        log.debug("PayPal unknown state <%s>, transaction #%d: %s",
+                  state, self.transaction.id, self.transaction.remote_identifier)
 
     @state_callback.register('approved')
     def state_callback(self, queue: QueueAgent, notify: Notifier, **_):
         if self.transaction.end(sucessfully=True):
             self.subscription.position = queue.add()
             notify.confirmed()
+
+    @state_callback.register('canceled', 'expired', 'failed')
+    def state_callback(self, queue: QueueAgent, notify: Notifier, **_):
+        if self.transaction.end(sucessfully=False):
+            queue.remove()
+            notify.pay_denied()
