@@ -283,6 +283,6 @@ class Transaction(models.Model):
 
     @property
     def str_method(self):
-        from .payment import payment_names
+        from .payment.base import get_payment_names
 
-        return payment_names.get(self.method)
+        return get_payment_names().get(int(self.method))

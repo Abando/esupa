@@ -5,7 +5,7 @@
     <title>{{sub.badge}} ({{sub.id}}) - {{event.name}} ({{event.id}})</title>
 </head>
 <body>
-<form method="post" id="checkerForm">
+<form method="post" id="checkerForm">{% csrf_token %}
     <p><a href="{% url 'esupa-check-event' event.id %}">{{event.name}}</a></p>
 
     <h1>{{sub.badge}}</h1>
@@ -59,7 +59,18 @@
             </td>
             <td title="{{t.ended_at}}">{{t.ended_at|timesince}}</td>
             <td>
-                {% if not t.ended_at %}&mdash;{% elif t.accepted %}✔{% else %}✘{% endif %}
+                {% if not t.ended_at %}
+                    {% if t.method != 1 %}
+                    &mdash;
+                    {% else %}
+                    <button name="action" value="{{t.id}} yes">✔</button>
+                    <button name="action" value="{{t.id}} no">✘</button>
+                    {% endif %}
+                {% elif t.accepted %}
+                ✔
+                {% else %}
+                ✘
+                {% endif %}
             </td>
         </tr>
         {% endfor %}
