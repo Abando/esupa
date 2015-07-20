@@ -39,6 +39,7 @@ class PaymentMethod(PaymentBase):
             'event': self.subscription.event,
             'sub': self.subscription,
             'trans': self.transaction,
+            'filtered_transactions': self.transactions(method=self.CODE, filled_at__isnull=False),
             'form': DepositForm(self.transaction),
         }
         return render(request, 'esupa/deposit.html', context)
@@ -57,7 +58,7 @@ class PaymentMethod(PaymentBase):
             payment.put_file(request.FILES['upload'])
             return prg_redirect(payment.my_view_url(request))
         else:
-            return DepositForm(transaction, data=request.POST, files=request.FILES)
+            return PaymentMethod(transaction).start_payment(request, transaction.value)
 
     def put_file(self, upload):
         transaction = self.transaction
