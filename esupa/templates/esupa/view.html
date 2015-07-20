@@ -34,6 +34,16 @@
                 <li>Leu e concordou com o <a href="{{event.agreement_url}}">regulamento</a>?
                     <strong>{{sub.agreed|yesno}}</strong></li>
             </ul>
+            <p>Valor da inscrição: R$ {{sub.price}}</p>
+            {% if confirmed_trans %}
+            <p>Pagamentos confirmados:</p>
+            <ul>
+                {% for trans in confirmed_trans.all %}
+                <li>R$ {{trans.value}} (há {{trans.filled_at|timesince}})</li>
+                {% endfor %}
+                <li>Total: R$ {{sub.paid}}</li>
+            </ul>
+            {% endif %}
             <p class='buttons'>
                 {% for slug, title in pay_buttons.items %}
                 <button name='pay_with' value='{{slug}}' id="pay_{{slug}}">&nbsp; {{ title }} &nbsp;</button>

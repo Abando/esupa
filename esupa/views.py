@@ -71,6 +71,7 @@ def view(request: HttpRequest, slug: str) -> HttpResponse:
             'sub': subscription,
             'event': subscription.event,
             'state': SubsState(subscription.state),
+            'confirmed_trans': subscription.transaction_set.filter(accepted=True),
             'pay_buttons': get_payment_names(),
         }
         if 'pay_with' in request.POST:
