@@ -21,7 +21,7 @@
     </tr>
     {% for event in event_list %}
     <tr>
-        <th><a href="{% url 'esupa-check-event' event.id %}">{{event.name}}</a></th>
+        <th><a href="{% url 'esupa-check-event' event.slug %}">{{event.name}}</a></th>
         <td>{{event.starts_at}}</td>
         <td>{{event.capacity}}</td>
         <td>{{event.num_confirmed}}</td>

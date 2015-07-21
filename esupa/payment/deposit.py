@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and limitations under the License.
 #
 from logging import getLogger
+from decimal import Decimal
 
 from django import forms
 from django.core.exceptions import PermissionDenied, SuspiciousOperation
@@ -54,16 +55,17 @@ class PaymentMethod(PaymentBase):
             if transaction.subscription.state == SubsState.QUEUED_FOR_PAY:
                 raise PermissionDenied
             payment = PaymentMethod(transaction)
-            payment.put_file(request.FILES['upload'])
+            payment.put_file(request.FILES['upload'], request.POST['amount'])
             return prg_redirect(payment.my_view_url(request))
         else:
-            return DepositForm(transaction, data=request.POST, files=request.FILES)
+            return PaymentMethod(transaction).start_payment(request, transaction.value)
 
-    def put_file(self, upload):
+    def put_file(self, upload, amount):
         transaction = self.transaction
-        transaction.document = upload.read()
         transaction.mimetype = upload.content_type or 'application/octet-stream'
+        transaction.document = upload.read()
         transaction.filled_at = now()
+        transaction.value = Decimal(amount)
         transaction.save()
         transaction.subscription.raise_state(SubsState.VERIFYING_PAY)
         transaction.subscription.save()

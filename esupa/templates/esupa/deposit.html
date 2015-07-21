@@ -3,20 +3,10 @@
 {% block content %}
 <form method="post" action="{% url 'esupa-pay' trans.method %}" id="formPay" enctype="multipart/form-data">
     {% csrf_token %}
-    <input type="hidden" name="sid" value="{{sub.id}}" />
+    <input type="hidden" name="tid" value="{{trans.id}}" />
     <div class="row">
         <div class="large-12 columns">
-            {% if sub.transaction_set %}
-            <ul class='esupa-documents'>
-                {% for doc in sub.transaction_set.all %}
-                <li>
-                    <a href="{% url 'esupa-trans-doc' doc.id %}">Enviado há {{doc.filled_at|timesince}}.</a>
-                    <span class="docOk{{doc.accepted}}">{{doc.ended_at}}</span>
-                </li>
-                {% endfor %}
-            </ul>
-            {% endif %}
-            {{form}}
+            {{form.as_p}}
             <p class='buttons'>
                 <input type="submit" value="&nbsp; Enviar &nbsp;" />
                 <a class="anchor_button" href="{% url 'esupa-view' event.slug %}">&nbsp; Voltar &nbsp;</a>

@@ -18,6 +18,7 @@ from django.core.exceptions import ValidationError
 from django.forms import widgets
 from django.utils import formats
 from django.utils.safestring import mark_safe
+from django.utils.timezone import now
 
 from .models import Subscription, Optional
 
@@ -122,3 +123,26 @@ class SubscriptionForm(forms.ModelForm):
         when = formats.date_format(event.starts_at, 'DATE_FORMAT').lower()
         warning = ' Você deverá ter %d anos ou mais no dia %s.' % (event.min_age, when)
         self.fields['born'].help_text += warning
+
+
+class PartialPayForm(forms.Form):
+    amount = forms.DecimalField(
+        label='Quantidade a ser paga',
+        help_text='Com o pagamento parcial você pode combinar diferentes formas de pagamento.')
+
+    def __init__(self, amount):
+        super().__init__({'amount': amount})
+
+
+class ManualTransactionForm(forms.Form):
+    amount = forms.DecimalField()
+    when = forms.DateTimeField(initial=now)
+    attachment = forms.FileField(required=False)
+    notes = forms.CharField(required=False)
+
+    def __init__(self, subscription):
+        if isinstance(subscription, Subscription):
+            super().__init__()
+            self.fields['amount'].initial = subscription.get_owing
+        else:
+            super().__init__(subscription)
