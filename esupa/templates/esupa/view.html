@@ -44,11 +44,13 @@
                 <li>Total: R$ {{sub.paid}}</li>
             </ul>
             {% endif %}
+            {% if sub.state != state.QUEUED_FOR_PAY and sub.state < state.CONFIRMED %}
             <p class='buttons'>
                 {% for slug, title in pay_buttons.items %}
                 <button name='pay_with' value='{{slug}}' id="pay_{{slug}}">&nbsp; {{ title }} &nbsp;</button>
                 {% endfor %}
             </p>
+            {% endif %}
         </div>
     </div>
 </form>
