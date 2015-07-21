@@ -25,7 +25,7 @@ from django.utils.timezone import now
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import ListView
 
-from .forms import SubscriptionForm, PartialPayForm
+from .forms import SubscriptionForm, PartialPayForm, ManualTransactionForm
 from .models import Event, Subscription, SubsState, Transaction
 from .notify import Notifier
 from .payment.base import get_payment, get_payment_names
@@ -74,7 +74,7 @@ def view(request: HttpRequest, slug: str) -> HttpResponse:
             'state': SubsState(subscription.state),
             'pending_trans': subscription.transaction_set.filter(document__isnull=False, ended_at__isnull=True),
             'confirmed_trans': subscription.transaction_set.filter(accepted=True),
-            'partial_pay_form': PartialPayForm(subscription.owing),
+            'partial_pay_form': PartialPayForm(subscription.get_owing()),
             'pay_buttons': get_payment_names(),
         }
         if 'pay_with' in request.POST:
@@ -87,7 +87,7 @@ def view(request: HttpRequest, slug: str) -> HttpResponse:
                 try:
                     amount = Decimal(request.POST.get('amount', ''))
                 except DecimalException:
-                    amount = subscription.owing
+                    amount = subscription.get_owing()
                 return payment.start_payment(request, amount)
         return render(request, 'esupa/view.html', context)
     elif request.POST:
@@ -232,10 +232,33 @@ class TransactionList(EsupaListView):
         return self._subscription
 
     def get_context_data(self, **kwargs):
-        return super().get_context_data(event=self.event, sub=self.subscription, **kwargs)
+        return super().get_context_data(
+            event=self.event,
+            sub=self.subscription,
+            state=SubsState(),
+            manual_transaction_form=ManualTransactionForm(self.subscription),
+            **kwargs)
 
     def post(self, request: HttpRequest, sid: str):
-        tid, decision = request.POST.get('action').split()
-        transaction = Transaction.objects.get(id=tid, subscription_id=int(sid))
-        transaction.end(decision == 'yes')
+        if 'action' in request.POST:
+            tid, decision = request.POST.get('action').split()
+            transaction = Transaction.objects.get(id=tid, subscription_id=int(sid))
+            transaction.end(decision == 'yes')
+            transaction.verifier = request.user
+        else:
+            form = ManualTransactionForm(request.POST)
+            if form.is_valid():
+                transaction = Transaction(subscription_id=int(sid))
+                transaction.value = form.cleaned_data['amount']
+                transaction.created_at = form.cleaned_data['when']
+                transaction.method = 1
+                if request.FILES:
+                    transaction.mimetype = request.FILES['attachment'].content_type or 'application/octet-stream'
+                    transaction.document = request.FILES['attachment'].read()
+                transaction.filled_at = transaction.created_at
+                transaction.verifier = request.user
+                transaction.notes = form.cleaned_data['notes']
+                transaction.end(True)
+            else:
+                return self.get(request, sid)
         return prg_redirect(TransactionList.name, sid)

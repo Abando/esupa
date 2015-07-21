@@ -18,6 +18,7 @@ from django.core.exceptions import ValidationError
 from django.forms import widgets
 from django.utils import formats
 from django.utils.safestring import mark_safe
+from django.utils.timezone import now
 
 from .models import Subscription, Optional
 
@@ -131,3 +132,17 @@ class PartialPayForm(forms.Form):
 
     def __init__(self, amount):
         super().__init__({'amount': amount})
+
+
+class ManualTransactionForm(forms.Form):
+    amount = forms.DecimalField()
+    when = forms.DateTimeField(initial=now)
+    attachment = forms.FileField(required=False)
+    notes = forms.CharField(required=False)
+
+    def __init__(self, subscription):
+        if isinstance(subscription, Subscription):
+            super().__init__()
+            self.fields['amount'].initial = subscription.get_owing
+        else:
+            super().__init__(subscription)

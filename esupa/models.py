@@ -212,8 +212,8 @@ class Subscription(models.Model):
         return self.transaction_set.filter(accepted=True, ended_at__isnull=False) \
                    .aggregate(models.Sum('value'))['value__sum'] or Decimal(0)
 
-    @property
-    def owing(self) -> Decimal:
+    def get_owing(self) -> Decimal:
+        log.warn('calculated!')
         return self.price - self.paid
 
     @property
@@ -263,7 +263,7 @@ class Transaction(models.Model):
             return False
         elif sucessfully:
             # Transaction was accepted.
-            new_state = SubsState.PARTIALLY_PAID if subscription.owing else SubsState.CONFIRMED
+            new_state = SubsState.PARTIALLY_PAID if subscription.get_owing() else SubsState.CONFIRMED
             changed = subscription.raise_state(new_state)
             subscription.save()
             return changed

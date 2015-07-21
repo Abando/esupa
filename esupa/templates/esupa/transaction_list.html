@@ -77,6 +77,13 @@
         {% endfor %}
         </tbody>
     </table>
+
+    {% if sub.state < state.CONFIRMED %}
+    <h2>Manual Transaction Creation</h2>
+    <p>Was this paid manually? Automatically add a confirmed deposit transaction!</p>
+    {{manual_transaction_form.as_p}}
+    <p><input type="submit" /></p>
+    {% endif %}
 </form>
 </body>
 </html>

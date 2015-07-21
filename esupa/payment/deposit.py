@@ -62,8 +62,8 @@ class PaymentMethod(PaymentBase):
 
     def put_file(self, upload, amount):
         transaction = self.transaction
-        transaction.document = upload.read()
         transaction.mimetype = upload.content_type or 'application/octet-stream'
+        transaction.document = upload.read()
         transaction.filled_at = now()
         transaction.value = Decimal(amount)
         transaction.save()
