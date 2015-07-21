@@ -226,3 +226,9 @@ class TransactionList(EsupaListView):
 
     def get_context_data(self, **kwargs):
         return super().get_context_data(event=self.event, sub=self.subscription, **kwargs)
+
+    def post(self, request: HttpRequest, sid: str):
+        tid, decision = request.POST.get('action').split()
+        transaction = Transaction.objects.get(id=tid, subscription_id=int(sid))
+        transaction.end(decision == 'yes')
+        return prg_redirect(TransactionList.name, sid)
