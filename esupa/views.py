@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and limitations under the License.
 #
 from logging import getLogger
+from decimal import Decimal, DecimalException
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
@@ -24,7 +25,7 @@ from django.utils.timezone import now
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import ListView
 
-from .forms import SubscriptionForm
+from .forms import SubscriptionForm, PartialPayForm
 from .models import Event, Subscription, SubsState, Transaction
 from .notify import Notifier
 from .payment.base import get_payment, get_payment_names
@@ -71,7 +72,9 @@ def view(request: HttpRequest, slug: str) -> HttpResponse:
             'sub': subscription,
             'event': subscription.event,
             'state': SubsState(subscription.state),
+            'pending_trans': subscription.transaction_set.filter(document__isnull=False, ended_at__isnull=True),
             'confirmed_trans': subscription.transaction_set.filter(accepted=True),
+            'partial_pay_form': PartialPayForm(subscription.owing),
             'pay_buttons': get_payment_names(),
         }
         if 'pay_with' in request.POST:
@@ -81,7 +84,11 @@ def view(request: HttpRequest, slug: str) -> HttpResponse:
             subscription.raise_state(SubsState.EXPECTING_PAY if queue.within_capacity else SubsState.QUEUED_FOR_PAY)
             if queue.within_capacity:
                 payment = get_payment(int(request.POST['pay_with']))(subscription)
-                return payment.start_payment(request, subscription.price)
+                try:
+                    amount = Decimal(request.POST.get('amount', ''))
+                except DecimalException:
+                    amount = subscription.owing
+                return payment.start_payment(request, amount)
         return render(request, 'esupa/view.html', context)
     elif request.POST:
         # Avoid an infinite loop. We shouldn't be receiving a POST in this view without a preexisting Subscription.

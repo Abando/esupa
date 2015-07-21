@@ -44,7 +44,19 @@
                 <li>Total: R$ {{sub.paid}}</li>
             </ul>
             {% endif %}
+            {% if pending_trans %}
+            <p>Pagamentos sendo verificados:</p>
+            <ul>
+                {% for trans in pending_trans.all %}
+                <li>
+                    R$ {{trans.value}} (há {{trans.filled_at|timesince}})
+                    <a href="{% url 'esupa-trans-doc' trans.id %}">Ver anexo.</a>
+                </li>
+                {% endfor %}
+            </ul>
+            {% endif %}
             {% if sub.state != state.QUEUED_FOR_PAY and sub.state < state.CONFIRMED %}
+            {{partial_pay_form.as_p}}
             <p class='buttons'>
                 {% for slug, title in pay_buttons.items %}
                 <button name='pay_with' value='{{slug}}' id="pay_{{slug}}">&nbsp; {{ title }} &nbsp;</button>

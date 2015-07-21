@@ -6,23 +6,7 @@
     <input type="hidden" name="tid" value="{{trans.id}}" />
     <div class="row">
         <div class="large-12 columns">
-            {% if filtered_transactions %}
-            <ul class='esupa-documents'>
-                {% for doc in filtered_transactions.all %}
-                <li>
-                    R$ {{doc.value}}.
-                    <a href="{% url 'esupa-trans-doc' doc.id %}">Enviado há {{doc.filled_at|timesince}}</a>.
-                    {% if doc.ended_at %}
-                        <span class="docOk{{doc.accepted}}">
-                            {% if doc.accepted %} Aceito {% else %} Rejeitado {% endif %}
-                            há {{doc.ended_at|timesince}}.
-                        </span>
-                    {% endif %}
-                </li>
-                {% endfor %}
-            </ul>
-            {% endif %}
-            {{form}}
+            {{form.as_p}}
             <p class='buttons'>
                 <input type="submit" value="&nbsp; Enviar &nbsp;" />
                 <a class="anchor_button" href="{% url 'esupa-view' event.slug %}">&nbsp; Voltar &nbsp;</a>

@@ -40,7 +40,6 @@ class PaymentMethod(PaymentBase):
             'event': self.subscription.event,
             'sub': self.subscription,
             'trans': self.transaction,
-            'filtered_transactions': self.transactions(method=self.CODE, filled_at__isnull=False),
             'form': DepositForm(self.transaction),
         }
         return render(request, 'esupa/deposit.html', context)

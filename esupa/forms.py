@@ -122,3 +122,12 @@ class SubscriptionForm(forms.ModelForm):
         when = formats.date_format(event.starts_at, 'DATE_FORMAT').lower()
         warning = ' Você deverá ter %d anos ou mais no dia %s.' % (event.min_age, when)
         self.fields['born'].help_text += warning
+
+
+class PartialPayForm(forms.Form):
+    amount = forms.DecimalField(
+        label='Quantidade a ser paga',
+        help_text='Com o pagamento parcial você pode combinar diferentes formas de pagamento.')
+
+    def __init__(self, amount):
+        super().__init__({'amount': amount})
