@@ -47,7 +47,7 @@
         {% for t in transaction_list %}
         <tr class="trans">
             <td>{{t.id}}</td>
-            <td>{{t.value}}</td>
+            <td>{{t.amount}}</td>
             <td>{{t.str_method}}</td>
             <td title="{{t.created_at}}">{{t.created_at|timesince}}</td>
             <td title="{{t.filled_at}}">{{t.filled_at|timesince}}</td>

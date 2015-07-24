@@ -34,7 +34,7 @@ class PaymentMethod(PaymentBase):
     def start_payment(self, request, amount):
         event = self.subscription.event
         api = PagSeguroApi()
-        self.transaction.value = amount
+        self.transaction.amount = amount
         self.transaction.save()
         api.params['reference'] = self.transaction.id
         api.params['notificationURL'] = self.my_pay_url(request)

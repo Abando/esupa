@@ -39,7 +39,7 @@
             <p>Pagamentos confirmados:</p>
             <ul>
                 {% for trans in confirmed_trans.all %}
-                <li>R$ {{trans.value}} (há {{trans.filled_at|timesince}})</li>
+                <li>R$ {{trans.amount}} (há {{trans.filled_at|timesince}})</li>
                 {% endfor %}
                 <li>Total: R$ {{sub.paid}}</li>
             </ul>
@@ -49,7 +49,7 @@
             <ul>
                 {% for trans in pending_trans.all %}
                 <li>
-                    R$ {{trans.value}} (há {{trans.filled_at|timesince}})
+                    R$ {{trans.amount}} (há {{trans.filled_at|timesince}})
                     <a href="{% url 'esupa-trans-doc' trans.id %}">Ver anexo.</a>
                 </li>
                 {% endfor %}

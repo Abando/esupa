@@ -34,7 +34,7 @@ class PaymentMethod(PaymentBase):
     def start_payment(self, request: HttpRequest, amount) -> HttpResponse:
         self.transaction = self.transactions(method=self.CODE, filled_at__isnull=True).first()
         # If the transaction above is set to None, the call below will automatically create a new one.
-        self.transaction.value = amount
+        self.transaction.amount = amount
         self.transaction.save()
         context = {
             'event': self.subscription.event,
@@ -58,14 +58,14 @@ class PaymentMethod(PaymentBase):
             payment.put_file(request.FILES['upload'], request.POST['amount'])
             return prg_redirect(payment.my_view_url(request))
         else:
-            return PaymentMethod(transaction).start_payment(request, transaction.value)
+            return PaymentMethod(transaction).start_payment(request, transaction.amount)
 
     def put_file(self, upload, amount):
         transaction = self.transaction
         transaction.mimetype = upload.content_type or 'application/octet-stream'
         transaction.document = upload.read()
         transaction.filled_at = now()
-        transaction.value = Decimal(amount)
+        transaction.amount = Decimal(amount)
         transaction.save()
         transaction.subscription.raise_state(SubsState.VERIFYING_PAY)
         transaction.subscription.save()
@@ -81,4 +81,4 @@ class DepositForm(forms.Form):
         fmt = 'Deposite até R$ %s na conta abaixo e envie foto ou scan do comprovante.\n%s'
         msg = fmt % (subscription.price, subscription.event.deposit_info)
         self.fields['upload'].help_text = msg.replace('\n', '\n<br/>')
-        self.fields['amount'].initial = transaction.value
+        self.fields['amount'].initial = transaction.amount
