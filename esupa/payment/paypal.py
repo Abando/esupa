@@ -45,7 +45,7 @@ class PaymentMethod(PaymentBase):
 
     def start_payment(self, request, amount):
         event = self.subscription.event
-        self.transaction.value = amount
+        self.transaction.amount = amount
         payment = Payment({
             'transactions': [{'amount': {'total': amount.to_eng_string(),
                                          'currency': 'BRL'},

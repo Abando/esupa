@@ -249,7 +249,7 @@ class TransactionList(EsupaListView):
             form = ManualTransactionForm(request.POST)
             if form.is_valid():
                 transaction = Transaction(subscription_id=int(sid))
-                transaction.value = form.cleaned_data['amount']
+                transaction.amount = form.cleaned_data['amount']
                 transaction.created_at = form.cleaned_data['when']
                 transaction.method = 1
                 if request.FILES:

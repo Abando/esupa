@@ -210,7 +210,7 @@ class Subscription(models.Model):
     @property
     def paid(self) -> Decimal:
         return self.transaction_set.filter(accepted=True, ended_at__isnull=False) \
-                   .aggregate(models.Sum('value'))['value__sum'] or Decimal(0)
+                   .aggregate(models.Sum('amount'))['amount__sum'] or Decimal(0)
 
     def get_owing(self) -> Decimal:
         log.warn('calculated!')
@@ -234,8 +234,7 @@ class Subscription(models.Model):
 
 class Transaction(models.Model):
     subscription = models.ForeignKey(Subscription)
-    payee = models.CharField(max_length=10, blank=True)
-    value = PriceField()
+    amount = PriceField()
     created_at = models.DateTimeField(auto_now=True)
     method = models.SmallIntegerField(default=0)
     remote_identifier = models.CharField(max_length=50, blank=True)
