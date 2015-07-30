@@ -1,0 +1,17 @@
+{% extends 'esupa/base.html' %}
+
+{% block content %}
+<form method="post" action="{% url 'esupa-pay' trans.method %}" id="formPay" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="hidden" name="tid" value="{{trans.id}}" />
+    <div class="row">
+        <div class="large-12 columns">
+            {{form.as_p}}
+            <p class='buttons'>
+                <input type="submit" value="&nbsp; Enviar &nbsp;" />
+                <a class="anchor_button" href="{% url 'esupa-view' event.slug %}">&nbsp; Voltar &nbsp;</a>
+            </p>
+        </div>
+    </div>
+</form>
+{% endblock %}

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>{{sub.badge}} ({{sub.id}}) - {{event.name}} ({{event.id}})</title>
+</head>
+<body>
+<form method="post" id="checkerForm">{% csrf_token %}
+    <p><a href="{% url 'esupa-check-event' event.id %}">{{event.name}}</a></p>
+
+    <h1>{{sub.badge}}</h1>
+
+    <ul>
+        <li>Nome legal: <strong>{{sub.full_name}}</strong></li>
+        <li>Documento: <strong>{{sub.document}}</strong></li>
+        <li>Crachá: <strong>{{sub.badge}}</strong></li>
+        <li>Email: <strong>{{sub.email}}</strong></li>
+        <li>Celular: <strong>{{sub.phone}}</strong></li>
+        <li>Nascimento: <strong>{{sub.born}}</strong></li>
+        <li>Camiseta: <strong>{{sub.shirt_size}}</strong></li>
+        <li>Tipo sanguíneo: <strong>{{sub.blood}}</strong></li>
+        <li>Possui plano de saúde? <strong>{{sub.health_insuled|yesno}}</strong></li>
+        <li>Contato de emergência: <strong>{{sub.contact}}</strong></li>
+        <li>Informações médicas rotineiras e de emergência: <strong>{{sub.medication}}</strong></li>
+        <li>Opcionais: <strong>{% for opt in sub.optionals.all %}
+            {{opt.name}}{% if not forloop.last %}, {% endif %}{% empty %}nenhum{% endfor %}</strong></li>
+        <li>Leu e concordou com o <a href="{{event.agreement_url}}">regulamento</a>?
+            <strong>{{sub.agreed|yesno}}</strong></li>
+        <li>Inscrição: <strong>{{sub.str_state}}</strong></li>
+    </ul>
+
+    <h2>Transactions</h2>
+    <table border="1" cellspacing="0">
+        <thead>
+        <tr>
+            <th>id</th>
+            <th>amount</th>
+            <th>method</th>
+            <th>created</th>
+            <th>filled</th>
+            <th>document</th>
+            <th>ended</th>
+            <th>ok?</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for t in transaction_list %}
+        <tr class="trans">
+            <td>{{t.id}}</td>
+            <td>{{t.amount}}</td>
+            <td>{{t.str_method}}</td>
+            <td title="{{t.created_at}}">{{t.created_at|timesince}}</td>
+            <td title="{{t.filled_at}}">{{t.filled_at|timesince}}</td>
+            <td>
+                {% if t.mimetype %}
+                <a href="{% url 'esupa-trans-doc' t.id %}">{{t.mimetype}}</a>
+                {% else %}
+                &mdash;
+                {% endif %}
+            </td>
+            <td title="{{t.ended_at}}">{{t.ended_at|timesince}}</td>
+            <td>
+                {% if not t.ended_at %}
+                    {% if t.method != 1 %}
+                    &mdash;
+                    {% else %}
+                    <button name="action" value="{{t.id}} yes">✔</button>
+                    <button name="action" value="{{t.id}} no">✘</button>
+                    {% endif %}
+                {% elif t.accepted %}
+                ✔
+                {% else %}
+                ✘
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    {% if sub.state < state.CONFIRMED %}
+    <h2>Manual Transaction Creation</h2>
+    <p>Was this paid manually? Automatically add a confirmed deposit transaction!</p>
+    {{manual_transaction_form.as_p}}
+    <p><input type="submit" /></p>
+    {% endif %}
+</form>
+</body>
+</html>
