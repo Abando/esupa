@@ -231,6 +231,9 @@ class TransactionList(EsupaListView):
             self._event = self._subscription.event
         return self._subscription
 
+    def get_queryset(self):
+        return self.subscription.transaction_set.order_by('-id')
+
     def get_context_data(self, **kwargs):
         return super().get_context_data(
             event=self.event,
