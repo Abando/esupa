@@ -255,6 +255,8 @@ class Transaction(models.Model):
         self.accepted = sucessfully
         if not self.ended_at:
             self.ended_at = now()
+        if not self.filled_at:
+            self.filled_at = self.ended_at
         self.save()
         subscription = self.subscription
         if subscription.state >= SubsState.CONFIRMED:
