@@ -114,7 +114,7 @@ def edit(request: HttpRequest, slug: str) -> HttpResponse:
         subscription.state = SubsState.ACCEPTABLE if acceptable else SubsState.VERIFYING_DATA
         subscription.save()
         if not acceptable:
-            Notifier(subscription).staffer_action_required()
+            Notifier(subscription).staffer_action_required(request.build_absolute_uri)
         return view(request, slug)  # may call edit(); it's probably a bug if it does
     else:
         return render(request, 'esupa/edit.html', {
@@ -230,6 +230,9 @@ class TransactionList(EsupaListView):
             self._subscription = Subscription.objects.get(id=int(self.args[0]))
             self._event = self._subscription.event
         return self._subscription
+
+    def get_queryset(self):
+        return self.subscription.transaction_set.order_by('-id')
 
     def get_context_data(self, **kwargs):
         return super().get_context_data(
