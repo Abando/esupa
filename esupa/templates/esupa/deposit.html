@@ -6,10 +6,16 @@
     <input type="hidden" name="tid" value="{{trans.id}}" />
     <div class="row">
         <div class="large-12 columns">
+            <h4>Fazer um depósito bancário</h4>
+            <p>Você pode fazer um ou mais depósitos diretamente na conta de um tripulante e ir anexando os comprovantes nesta tela. Quando o total chegar ao valor da inscrição, a tesouraria do Abando confirmará sua vaga. Até lá, guardaremos com carinho seu lugar para que possa completar os pagamentos.</p>
+        </div>
+    </div>
+    <div class="row deposit">
+        <div class="large-12 columns">
             {{form.as_p}}
             <p class='buttons'>
-                <input type="submit" value="&nbsp; Enviar &nbsp;" />
-                <a class="anchor_button" href="{% url 'esupa-view' event.slug %}">&nbsp; Voltar &nbsp;</a>
+                <input type="submit" value="&nbsp; Enviar &nbsp;" class="button" />
+                <a class="button secondary" href="{% url 'esupa-view' event.slug %}">&nbsp; Voltar &nbsp;</a>
             </p>
         </div>
     </div>

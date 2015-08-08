@@ -14,7 +14,7 @@
             </p>
             {% elif state.value <= state.QUEUED_FOR_PAY %}
             <p class="buttons">
-                <a class="anchor_button" href="{% url 'esupa-edit' event.slug %}">&nbsp; Editar &nbsp;</a>
+                <a class="button secondary" href="{% url 'esupa-edit' event.slug %}">&nbsp; Editar &nbsp;</a>
             </p>
             {% endif %}
             <ul>
@@ -56,6 +56,7 @@
             </ul>
             {% endif %}
             {% if sub.state != state.QUEUED_FOR_PAY and sub.state < state.CONFIRMED %}
+            <h4>Pagar seu registro usando</h4>
             {{partial_pay_form.as_p}}
             <p class='buttons'>
                 {% for slug, title in pay_buttons.items %}

@@ -1,10 +1,18 @@
-.helptext{
-	background: #ddd;
-	padding: 4px;
-	font-size: 0.6em;
-	float: right;
-	margin-top: -16px;
+.helptext {
+    background: #ddd;
+    padding: 4px;
+    font-size: 0.8em;
+    width: 100%;
+    display: block;
+    margin-top: -16px;
 }
+
+div.deposit .helptext{
+    font-size: 1em;
+    display: block;
+	margin-top: auto;
+}
+
 #id_optionals, .errorlist{
 	list-style: none;
 }
