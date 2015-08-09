@@ -19,6 +19,7 @@ from django.core.exceptions import PermissionDenied, SuspiciousOperation
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 from django.utils.timezone import now
+from django.utils.translation import ugettext_lazy as _t, ugettext as _tt
 
 from .base import PaymentBase
 from ..models import Transaction, SubsState
@@ -29,7 +30,7 @@ log = getLogger(__name__)
 
 class PaymentMethod(PaymentBase):
     CODE = 1
-    TITLE = 'Depósito Bancário'
+    TITLE = _t('Depósito Bancário')
 
     def start_payment(self, request: HttpRequest, amount) -> HttpResponse:
         self.transaction = self.transactions(method=self.CODE, filled_at__isnull=True).first()
@@ -72,13 +73,13 @@ class PaymentMethod(PaymentBase):
 
 
 class DepositForm(forms.Form):
-    amount = forms.DecimalField(label='Valor depositado', max_digits=7, decimal_places=2)
-    upload = forms.FileField(label='Comprovante')
+    amount = forms.DecimalField(label=_t('Valor depositado'), max_digits=7, decimal_places=2)
+    upload = forms.FileField(label=_t('Comprovante'))
 
     def __init__(self, transaction: Transaction, *args, **kwargs):
         forms.Form.__init__(self, *args, **kwargs)
         subscription = transaction.subscription
-        fmt = 'Deposite até R$ %s na conta abaixo e envie foto ou scan do comprovante.\n%s'
+        fmt = _tt('Deposite até R$ %s na conta abaixo e envie foto ou scan do comprovante.\n%s')
         msg = fmt % (subscription.price, subscription.event.deposit_info)
         self.fields['upload'].help_text = msg.replace('\n', '\n<br/>')
         self.fields['amount'].initial = transaction.amount

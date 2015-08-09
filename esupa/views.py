@@ -22,6 +22,7 @@ from django.http import HttpResponse, Http404, HttpRequest, JsonResponse
 from django.shortcuts import render
 from django.utils.decorators import classonlymethod
 from django.utils.timezone import now
+from django.utils.translation import ugettext as _tt
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import ListView
 
@@ -50,7 +51,7 @@ def redirect_to_view_or_edit(request: HttpRequest, slug: str) -> HttpResponse:
         exists = Subscription.objects.filter(event=event, user=request.user).exists()
         return prg_redirect(view.name if exists else edit.name, event.slug)
     else:
-        raise Http404('There is no event. Create one in /admin/')
+        raise Http404(_tt('There is no event. Create one in /admin/'))
 
 
 def _get_subscription(event_slug: str, user: User) -> Subscription:
@@ -130,7 +131,7 @@ def transaction_document(request: HttpRequest, tid) -> HttpResponse:
     # Add ETag generation & verification… maybe… eventually…
     trans = Transaction.objects.get(id=tid)
     if trans is None or not trans.document:
-        raise Http404("No such document.")
+        raise Http404(_tt("No such document."))
     if not request.user.is_staff and trans.subscription.user != request.user:
         return PermissionDenied
     response = HttpResponse(trans.document, content_type=trans.mimetype)

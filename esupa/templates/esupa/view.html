@@ -1,62 +1,73 @@
 {% extends 'esupa/base.html' %}
-
+{% load i18n %}
 {% block content %}
 <form method="post" action="{% url 'esupa-view' event.slug %}" id="formView" enctype="multipart/form-data">
     {% csrf_token %}
     <div class="row">
         <div class="large-12 columns">
             <p>
-                Sua inscrição está: <strong>{{state}}</strong>
+                {% trans "Sua inscrição está:" %} <strong>{{state}}</strong>
             </p>
             {% if state.value >= state.CONFIRMED %}
             <p>
-                Nos vemos no {{event.name}}!
+                {% blocktrans with name=event.name %} Nos vemos no {{name}}! {% endblocktrans %}
             </p>
             {% elif state.value <= state.QUEUED_FOR_PAY %}
             <p class="buttons">
-                <a class="button secondary" href="{% url 'esupa-edit' event.slug %}">&nbsp; Editar &nbsp;</a>
+                <a class="button secondary" href="{% url 'esupa-edit' event.slug %}">&nbsp;
+                    {% trans "Editar" %} &nbsp;</a>
             </p>
             {% endif %}
             <ul>
-                <li>Nome legal: <strong>{{sub.full_name}}</strong></li>
-                <li>Documento: <strong>{{sub.document}}</strong></li>
-                <li>Crachá: <strong>{{sub.badge}}</strong></li>
-                <li>Email: <strong>{{sub.email}}</strong></li>
-                <li>Celular: <strong>{{sub.phone}}</strong></li>
-                <li>Nascimento: <strong>{{sub.born}}</strong></li>
-                <li>Camiseta: <strong>{{sub.shirt_size}}</strong></li>
-                <li>Tipo sanguíneo: <strong>{{sub.blood}}</strong></li>
-                <li>Possui plano de saúde? <strong>{{sub.health_insuled|yesno}}</strong></li>
-                <li>Contato de emergência: <strong>{{sub.contact}}</strong></li>
-                <li>Informações médicas rotineiras e de emergência: <strong>{{sub.medication}}</strong></li>
-                <li>Opcionais: <strong>{% for opt in sub.optionals.all %}
-                    {{opt.name}}{% if not forloop.last %}, {% endif %}{% empty %}nenhum{% endfor %}</strong></li>
-                <li>Leu e concordou com o <a href="{{event.agreement_url}}">regulamento</a>?
+                <li>{% trans "Nome legal:" %} <strong>{{sub.full_name}}</strong></li>
+                <li>{% trans "Documento:" %} <strong>{{sub.document}}</strong></li>
+                <li>{% trans "Crachá:" %} <strong>{{sub.badge}}</strong></li>
+                <li>{% trans "Email:" %} <strong>{{sub.email}}</strong></li>
+                <li>{% trans "Celular:" %} <strong>{{sub.phone}}</strong></li>
+                <li>{% trans "Nascimento:" %} <strong>{{sub.born}}</strong></li>
+                <li>{% trans "Camiseta:" %} <strong>{{sub.shirt_size}}</strong></li>
+                <li>{% trans "Tipo sanguíneo:" %} <strong>{{sub.blood}}</strong></li>
+                <li>{% trans "Possui plano de saúde?" %} <strong>{{sub.health_insuled|yesno}}</strong></li>
+                <li>{% trans "Contato de emergência:" %} <strong>{{sub.contact}}</strong></li>
+                <li>{% trans "Informações médicas rotineiras e de emergência:" %}
+                    <strong>{{sub.medication}}</strong></li>
+                <li>{% trans "Opcionais:" %} <strong>{% for opt in sub.optionals.all %}
+                    {{opt.name}}{% if not forloop.last %}, {% endif %}{% empty %}{% trans "nenhum" %}{% endfor %}
+                </strong></li>
+                <li>{% blocktrans with url=event.agreement_url %}
+                    Leu e concordou com o <a href="{{url}}">regulamento</a>?
+                    {% endblocktrans %}
                     <strong>{{sub.agreed|yesno}}</strong></li>
             </ul>
-            <p>Valor da inscrição: R$ {{sub.price}}</p>
+            <p>{% trans "Valor da inscrição:" %} R$ {{sub.price}}</p>
             {% if confirmed_trans %}
-            <p>Pagamentos confirmados:</p>
+            <p>{% trans "Pagamentos confirmados:" %}</p>
             <ul>
                 {% for trans in confirmed_trans.all %}
-                <li>R$ {{trans.amount}} (há {{trans.filled_at|timesince}})</li>
+                <li>
+                    {% blocktrans with amount=trans.amount when=trans.filled_at %}
+                    R$ {{amount}} (há {{when|timesince}})
+                    {% endblocktrans %}
+                </li>
                 {% endfor %}
-                <li>Total: R$ {{sub.paid}}</li>
+                <li>{% trans "Total:" %} R$ {{sub.paid}}</li>
             </ul>
             {% endif %}
             {% if pending_trans %}
-            <p>Pagamentos sendo verificados:</p>
+            <p>{% trans "Pagamentos sendo verificados:" %}</p>
             <ul>
                 {% for trans in pending_trans.all %}
                 <li>
-                    R$ {{trans.amount}} (há {{trans.filled_at|timesince}})
+                    {% blocktrans with amount=trans.amount when=trans.filled_at %}
+                    R$ {{amount}} (há {{when|timesince}})
+                    {% endblocktrans %}
                     <a href="{% url 'esupa-trans-doc' trans.id %}">Ver anexo.</a>
                 </li>
                 {% endfor %}
             </ul>
             {% endif %}
             {% if sub.state != state.QUEUED_FOR_PAY and sub.state < state.CONFIRMED %}
-            <h4>Pagar seu registro usando</h4>
+            <h4>{% trans "Pagar seu registro usando" %}</h4>
             {{partial_pay_form.as_p}}
             <p class='buttons'>
                 {% for slug, title in pay_buttons.items %}

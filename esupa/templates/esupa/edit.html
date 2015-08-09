@@ -1,5 +1,5 @@
 {% extends 'esupa/base.html' %}
-
+{% load i18n %}
 {% block content %}
 <form method='post' action="{% url 'esupa-edit' event.slug %}" id='formEdit' enctype='multipart/form-data'>
     {% csrf_token %}
@@ -7,8 +7,9 @@
         <div class="large-12 columns">
             {{form.as_p}}
             <p class='buttons'>
-                <input type="submit" class="button" value="&nbsp; Salvar Edições &nbsp;" />
-                <a class="button secondary" href="{% url 'esupa-view' event.slug %}">&nbsp; Cancelar Edição &nbsp;</a>
+                <input type="submit" class="button" value='&nbsp; {% trans "Salvar Edições" %} &nbsp;'/>
+                <a class="button secondary" href="{% url 'esupa-view' event.slug %}">&nbsp;
+                    {% trans "Cancelar Edição" %} &nbsp;</a>
             </p>
         </div>
     </div>

@@ -18,6 +18,7 @@ from threading import Thread
 from django.contrib.auth.models import User
 from django.core.mail import EmailMessage
 from django.core.urlresolvers import reverse
+from django.utils.translation import ugettext as _tt
 
 from .models import Subscription
 
@@ -51,38 +52,37 @@ class Notifier:
 
     def can_pay(self):
         """This can happen in two cases, (1) esupa staff data verify accepted, or (2) the queue moved."""
-        self._send('Pagamento Liberado',
-                   'Sua inscrição está pronta para ser paga. Após o pagamento, ela será',
-                   'confirmada, e sua vaga estará garantida.')
+        self._send(_tt('Pagamento Liberado'),
+                   _tt('Sua inscrição está pronta para ser paga. Após o pagamento, ela será '
+                       'confirmada, e sua vaga estará garantida.'))
 
     def expired(self):
         """This means we've waited too long and the subscription can no longer be paid."""
         hours = self.s.event.payment_wait_hours
-        self._send('Pagamento Vencida',
-                   'O seu prazo de %d horas para pagar venceu e você foi retirado da' % hours,
-                   'fila de pagamento.')
+        self._send(_tt('Pagamento Vencida'),
+                   _tt('O seu prazo de %d horas para pagar venceu e você foi retirado da fila de pagamento.') % hours)
 
     def data_denied(self):
         """Esupa staff data verify failed."""
-        self._send('Inscrição Negada',
-                   'Seus dados foram verificados e sua inscrição foi negada.')
+        self._send(_tt('Inscrição Negada'),
+                   _tt('Seus dados foram verificados e sua inscrição foi negada.'))
 
     def confirmed(self):
         """Pay has been accepted."""
-        self._send('Inscriçao Confirmada',
-                   'Bem vindo! Sua inscrição está confirmada. :)')
+        self._send(_tt('Inscriçao Confirmada'),
+                   _tt('Bem vindo! Sua inscrição está confirmada. :)'))
 
     def pay_denied(self):
         """Pay has been denied by the processor."""
-        self._send('Pagamento Cancelado',
-                   'O seu pagamento foi cancelado pela operadora de pagamento.')
+        self._send(_tt('Pagamento Cancelado'),
+                   _tt('O seu pagamento foi cancelado pela operadora de pagamento.'))
 
     def staffer_action_required(self, build_absolute_uri):
         """Sent to staffers, telling them that they're supposed to verify some data."""
         from .views import TransactionList, SubscriptionList
 
-        subject = '[%s] verificar: %s' % (self.s.event.name, self.s.badge)
-        body = 'Verificar inscrição #%d (%s):\n%s\n\nTodos em %s:\n%s' % (
+        subject = _tt('[%s] check: %s') % (self.s.event.name, self.s.badge)
+        body = _tt('Check subscription #%d (%s):\n%s\n\nAll in %s:\n%s') % (
             self.s.id, self.s.badge, build_absolute_uri(reverse(TransactionList.name, args=[self.s.id])),
             self.s.event.name, build_absolute_uri(reverse(SubscriptionList.name, args=[self.s.event.id])))
         recipients = User.objects.filter(is_staff=True).values_list('email', flat=True)

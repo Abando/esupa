@@ -19,6 +19,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.timezone import now
+from django.utils.translation import ugettext_lazy as _t, ugettext as _tt
 
 log = getLogger(__name__)
 PriceField = lambda: models.DecimalField(max_digits=7, decimal_places=2)
@@ -28,7 +29,8 @@ def slug_blacklist_validator(target):
     from .urls import slug_blacklist
 
     if target in slug_blacklist:
-        raise ValidationError('To avoid name clashes, these slugs are not allowed: ' + ', '.join(slug_blacklist))
+        # Translators: This is only displayed in the Django Admin page.
+        raise ValidationError(_tt('To avoid name clashes, these slugs are not allowed: ') + ', '.join(slug_blacklist))
 
 
 class Enum:
@@ -56,7 +58,7 @@ class Enum:
         raise ValueError()
 
     def __str__(self):
-        return self._descr
+        return str(self._descr)
 
     @property
     def value(self):
@@ -80,17 +82,18 @@ class SubsState(Enum):
     CONFIRMED = 99
     VERIFYING_DATA = -1
     DENIED = -9
+    # Translators: This is the list of possible subscription states.
     choices = (
-        (NEW, 'Nova'),
-        (ACCEPTABLE, 'Preenchida'),
-        (QUEUED_FOR_PAY, 'Em fila para poder pagar'),
-        (EXPECTING_PAY, 'Aguardando pagamento'),
-        (VERIFYING_PAY, 'Verificando pagamento'),
-        (PARTIALLY_PAID, 'Parcialmente paga'),
-        (UNPAID_STAFF, 'Tripulante não pago'),
-        (CONFIRMED, 'Confirmada'),
-        (VERIFYING_DATA, 'Verificando dados'),
-        (DENIED, 'Rejeitada'),
+        (NEW, _t('Nova')),
+        (ACCEPTABLE, _t('Preenchida')),
+        (QUEUED_FOR_PAY, _t('Em fila para poder pagar')),
+        (EXPECTING_PAY, _t('Aguardando pagamento')),
+        (VERIFYING_PAY, _t('Verificando pagamento')),
+        (PARTIALLY_PAID, _t('Parcialmente paga')),
+        (UNPAID_STAFF, _t('Tripulante não pago')),
+        (CONFIRMED, _t('Confirmada')),
+        (VERIFYING_DATA, _t('Verificando dados')),
+        (DENIED, _t('Rejeitada')),
     )
 
 
