@@ -1,6 +1,6 @@
-# coding=utf-8
+# -*- coding: utf-8 -*-
 #
-# Copyright 2015, Abando.com.br
+# Copyright 2015, Ekevoo.com.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
 # compliance with the License. You may obtain a copy of the License at
@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and limitations under the License.
 #
 __author__ = 'Ekevoo'
-__copyright__ = 'Copyright 2015, Abando.com.br'
+__copyright__ = 'Copyright 2015, Ekevoo.com'
 __license__ = 'Apache License, Version 2.0'
 __version__ = '0.2.1'  # PEP386
 

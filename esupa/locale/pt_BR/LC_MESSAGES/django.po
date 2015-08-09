@@ -1,5 +1,5 @@
 # esupa (Event Subscription and Payment).
-# Copyright (C) 2015, Abando.com.br.
+# Copyright (C) 2015, Ekevoo.com.
 # This file is distributed under the same license as the esupa package.
 # Ekevoo <ekevoo@gmail.com>, 2015.
 #
