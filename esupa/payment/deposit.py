@@ -79,7 +79,7 @@ class DepositForm(forms.Form):
     def __init__(self, transaction: Transaction, *args, **kwargs):
         forms.Form.__init__(self, *args, **kwargs)
         subscription = transaction.subscription
-        fmt = _tt('Deposite até R$ %s na conta abaixo e envie foto ou scan do comprovante.\n%s')
-        msg = fmt % (subscription.price, subscription.event.deposit_info)
+        fmt = _tt('Deposite até R$ %(price)s na conta abaixo e envie foto ou scan do comprovante.\n%(info)s')
+        msg = fmt % {'price': subscription.price, 'info': subscription.event.deposit_info}
         self.fields['upload'].help_text = msg.replace('\n', '\n<br/>')
         self.fields['amount'].initial = transaction.amount

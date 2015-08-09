@@ -122,7 +122,7 @@ class SubscriptionForm(forms.ModelForm):
         if not event.min_age:
             return
         when = formats.date_format(event.starts_at, 'DATE_FORMAT').lower()
-        warning = _tt('Você deverá ter %d anos ou mais no dia %s.') % (event.min_age, when)
+        warning = _tt('Você deverá ter %(age)d anos ou mais no dia %(when)s.') % {'age': event.min_age, 'when': when}
         self.fields['born'].help_text += ' ' + warning
 
 

@@ -1,0 +1,6 @@
+# chdir to esupa app folder
+
+xgettext -d esupa \
+    --language=Python --keyword=_t --keyword=_tt \
+    -l pt_BR -o locale/pt_BR/LC_MESSAGES/esupa.po \
+    *.py payment/deposit.py

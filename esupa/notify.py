@@ -59,7 +59,7 @@ class Notifier:
     def expired(self):
         """This means we've waited too long and the subscription can no longer be paid."""
         hours = self.s.event.payment_wait_hours
-        self._send(_tt('Pagamento Vencida'),
+        self._send(_tt('Pagamento Vencido'),
                    _tt('O seu prazo de %d horas para pagar venceu e você foi retirado da fila de pagamento.') % hours)
 
     def data_denied(self):
@@ -81,8 +81,8 @@ class Notifier:
         """Sent to staffers, telling them that they're supposed to verify some data."""
         from .views import TransactionList, SubscriptionList
 
-        subject = _tt('[%s] check: %s') % (self.s.event.name, self.s.badge)
-        body = _tt('Check subscription #%d (%s):\n%s\n\nAll in %s:\n%s') % (
+        subject = '[%s] check: %s' % (self.s.event.name, self.s.badge)
+        body = 'Check subscription #%d (%s):\n%s\n\nAll in %s:\n%s' % (
             self.s.id, self.s.badge, build_absolute_uri(reverse(TransactionList.name, args=[self.s.id])),
             self.s.event.name, build_absolute_uri(reverse(SubscriptionList.name, args=[self.s.event.id])))
         recipients = User.objects.filter(is_staff=True).values_list('email', flat=True)

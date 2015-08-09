@@ -1,0 +1,170 @@
+# esupa (Event Subscription and Payment).
+# Copyright (C) 2015, Abando.com.br.
+# This file is distributed under the same license as the esupa package.
+# Ekevoo <ekevoo@gmail.com>, 2015.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: 0.2.1\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2015-08-09 15:26-0400\n"
+"PO-Revision-Date: 2015-08-09 16:00-0400\n"
+"Last-Translator: Ekevoo <ekevoo@gmail.com>\n"
+"Language-Team: Portuguese (Brazil) <pt_BR@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: templates/esupa/base.html:7
+msgid "Inscrição e Pagamento"
+msgstr "Inscrição e Pagamento"
+
+#: templates/esupa/deposit.html:10
+msgid "Fazer um depósito bancário"
+msgstr "Fazer um depósito bancário"
+
+#: templates/esupa/deposit.html:12
+msgid ""
+" Você pode fazer um ou mais depósitos diretamente na conta de um tripulante "
+"e ir anexando\n"
+"                os comprovantes nesta tela. Quando o total chegar ao valor "
+"da inscrição, a tesouraria do Abando\n"
+"                confirmará sua vaga. Até lá, guardaremos com carinho seu "
+"lugar para que possa completar os\n"
+"                pagamentos. "
+msgstr ""
+" Você pode fazer um ou mais depósitos diretamente na conta de um tripulante "
+"e ir anexando\n"
+"                os comprovantes nesta tela. Quando o total chegar ao valor "
+"da inscrição, a tesouraria do Abando\n"
+"                confirmará sua vaga. Até lá, guardaremos com carinho seu "
+"lugar para que possa completar os\n"
+"                pagamentos. "
+
+#: templates/esupa/deposit.html:22
+msgid "Enviar"
+msgstr "Enviar"
+
+#: templates/esupa/deposit.html:24
+msgid "Voltar"
+msgstr "Voltar"
+
+#: templates/esupa/edit.html:10
+msgid "Salvar Edições"
+msgstr "Salvar Edições"
+
+#: templates/esupa/edit.html:12
+msgid "Cancelar Edição"
+msgstr "Cancelar Edição"
+
+#: templates/esupa/view.html:9
+msgid "Sua inscrição está:"
+msgstr "Sua inscrição está:"
+
+#: templates/esupa/view.html:13
+#, python-format
+msgid " Nos vemos no %(name)s! "
+msgstr " Nos vemos no %(name)s! "
+
+#: templates/esupa/view.html:18
+msgid "Editar"
+msgstr "Editar"
+
+#: templates/esupa/view.html:22
+msgid "Nome legal:"
+msgstr "Nome legal:"
+
+#: templates/esupa/view.html:23
+msgid "Documento:"
+msgstr "Documento:"
+
+#: templates/esupa/view.html:24
+msgid "Crachá:"
+msgstr "Crachá:"
+
+#: templates/esupa/view.html:25
+msgid "Email:"
+msgstr "Email:"
+
+#: templates/esupa/view.html:26
+msgid "Celular:"
+msgstr "Celular:"
+
+#: templates/esupa/view.html:27
+msgid "Nascimento:"
+msgstr "Nascimento:"
+
+#: templates/esupa/view.html:28
+msgid "Camiseta:"
+msgstr "Camiseta:"
+
+#: templates/esupa/view.html:29
+msgid "Tipo sanguíneo:"
+msgstr "Tipo sanguíneo:"
+
+#: templates/esupa/view.html:30
+msgid "Possui plano de saúde?"
+msgstr "Possui plano de saúde?"
+
+#: templates/esupa/view.html:31
+msgid "Contato de emergência:"
+msgstr "Contato de emergência:"
+
+#: templates/esupa/view.html:32
+msgid "Informações médicas rotineiras e de emergência:"
+msgstr "Informações médicas rotineiras e de emergência:"
+
+#: templates/esupa/view.html:34
+msgid "Opcionais:"
+msgstr "Opcionais:"
+
+#: templates/esupa/view.html:35
+msgid "nenhum"
+msgstr "nenhum"
+
+#: templates/esupa/view.html:37
+#, python-format
+msgid ""
+"\n"
+"                    Leu e concordou com o <a href=\"%(url)s\">regulamento</"
+"a>?\n"
+"                    "
+msgstr ""
+"\n"
+"                    Leu e concordou com o <a href=\"%(url)s\">regulamento</"
+"a>?\n"
+"                    "
+
+#: templates/esupa/view.html:42
+msgid "Valor da inscrição:"
+msgstr "Valor da inscrição:"
+
+#: templates/esupa/view.html:44
+msgid "Pagamentos confirmados:"
+msgstr "Pagamentos confirmados:"
+
+#: templates/esupa/view.html:48 templates/esupa/view.html.py:61
+#, python-format
+msgid ""
+"\n"
+"                    R$ %(amount)s (há %(when|timesince)s)\n"
+"                    "
+msgstr ""
+"\n"
+"                    R$ %(amount)s (há %(when|timesince)s)\n"
+"                    "
+
+#: templates/esupa/view.html:53
+msgid "Total:"
+msgstr "Total:"
+
+#: templates/esupa/view.html:57
+msgid "Pagamentos sendo verificados:"
+msgstr "Pagamentos sendo verificados:"
+
+#: templates/esupa/view.html:70
+msgid "Pagar seu registro usando"
+msgstr "Pagar seu registro usando"
