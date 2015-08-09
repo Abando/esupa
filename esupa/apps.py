@@ -17,4 +17,4 @@ from django.utils.translation import ugettext_lazy as _t
 
 class EsupaConfig(AppConfig):
     name = __name__[:__name__.rindex('.')]
-    verbose_name = _t('Event Subscription and Payment')
+    verbose_name = _t('esupa - Event Subscription and Payment')
