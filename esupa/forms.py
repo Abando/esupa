@@ -42,49 +42,48 @@ class ModelPricedOptInField(forms.ModelMultipleChoiceField):
 
 class SubscriptionForm(forms.ModelForm):
     full_name = forms.CharField(
-        label=_t('Nome completo'),
-        help_text=_t('Conforme documentação legal.'))
+        label=_t('Full name'),
+        help_text=_t('As in legal documentation.'))
     document = forms.CharField(
-        label=_t('Registro geral (RG)'),
-        help_text=_t('Informe número e órgão expeditor. '
-                     'Caso não tenha RG, coloque o número de outro documento, como CNH ou Passaporte.'))
+        label=_t('ID'),
+        help_text=_t('Type of document and its number.'))
     badge = forms.CharField(
-        label=_t('Crachá'),
-        help_text=_t('O nome que será impresso no seu crachá (badge).'))
+        label=_t('Badge'),
+        help_text=_t('Name to be printed on con badge.'))
     email = forms.EmailField(
         label=_t('E-mail'),
-        help_text=_t('Para contato até o dia do Abando.'))
+        help_text=_t('For contact before event date.'))
     phone = forms.CharField(
-        label=_t('Telefone celular'),
-        help_text=_t('Em caso de desencontro no dia do Abando, vamos telefonar esse número.'))
+        label=_t('Cell phone'),
+        help_text=_t('For contact at event date.'))
     born = forms.DateField(
-        label=_t('Data de nascimento'),
+        label=_t('Birth date'),
         input_formats='%d/%m/%Y %d/%m/%y'.split(),
-        help_text=_t('Informe no formato DD/MM/AAAA.'))
+        help_text=_t('Write in international format (DD/MM/YYYY).'))
     shirt_size = forms.ChoiceField(
-        label=_t('Tamanho da camiseta'),
+        label=_t('Shirt size'),
         choices=tuple(map(lambda a: (a, a), 'P M G GG GGG'.split())))
     blood = forms.CharField(
-        label=_t('Tipo sanguíneo'),
+        label=_t('Blood type'),
         required=False,
         max_length=3,
-        help_text=_t('Apenas se souber, informe tipo e fator Rh, por exemplo, O+, AB−, etc.'))
+        help_text=_t("Only if you're sure, blood type and Rh factor, such as O+, AB−, etc."))
     health_insured = forms.BooleanField(
-        label=_t('Possui plano de saúde particular?'),
+        label=_t('Do you have private health plan coverage in the region?'),
         required=False)
     contact = forms.CharField(
-        label=_t('Contato para emergências'),
+        label=_t('Emergency contact'),
         widget=widgets.Textarea,
-        help_text=_t('Informe nome, relação, e número de telefone (com DDD).'))
+        help_text=_t('Nome, relationship, and phone number with area code.'))
     medication = forms.CharField(
-        label=_t('Informações médicas rotineiras e de emergência'),
+        label=_t('Routine and emergency medical information'),
         required=False,
         widget=widgets.Textarea,
-        help_text=_t('Medicação sendo tomada, medicação para crises, pressão alta, diabetes, '
-                     'problemas respiratórios, do coração, alergias (alimentares e medicamentosas), '
-                     'qualquer problema ou condição que necessite de cuidado especial.'))
-    optionals = ModelPricedOptInField(label=_t('Opcional'), required=False)
-    agreed = forms.BooleanField(label=_t('Li e concordo com o [regulamento].'))
+        help_text=_t(
+            "Routine medication, crisis medication, blood pressure, diabetes, breathing conditions, heart "
+            "conditions, food or medication allergies, any sort of condition that requires special care."))
+    optionals = ModelPricedOptInField(label=_t('Optional'), required=False)
+    agreed = forms.BooleanField(label=_t('Read and agreed to [terms and conditions].'))
 
     class Meta:
         model = Subscription
@@ -103,7 +102,7 @@ class SubscriptionForm(forms.ModelForm):
         born = self.cleaned_data['born']
         if born > self.max_born:
             raise ValidationError(
-                _tt('Somente nascidos até %(date)s.'),
+                _tt('Must be born until %(date)s.'),
                 code='too_young',
                 params={'date': self.max_born},
             )
@@ -122,14 +121,14 @@ class SubscriptionForm(forms.ModelForm):
         if not event.min_age:
             return
         when = formats.date_format(event.starts_at, 'DATE_FORMAT').lower()
-        warning = _tt('Você deverá ter %(age)d anos ou mais no dia %(when)s.') % {'age': event.min_age, 'when': when}
+        warning = _tt('You must be %(age)d or older at %(when)s.') % {'age': event.min_age, 'when': when}
         self.fields['born'].help_text += ' ' + warning
 
 
 class PartialPayForm(forms.Form):
     amount = forms.DecimalField(
-        label=_t('Quantidade a ser paga'),
-        help_text=_t('Com o pagamento parcial você pode combinar diferentes formas de pagamento.'))
+        label=_t('Amount to be paid'),
+        help_text=_t('You can pay partially to combine different payment methods.'))
 
     def __init__(self, amount):
         super().__init__({'amount': amount})

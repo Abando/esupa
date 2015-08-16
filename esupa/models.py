@@ -84,16 +84,16 @@ class SubsState(Enum):
     DENIED = -9
     # Translators: This is the list of possible subscription states.
     choices = (
-        (NEW, _t('Nova')),
-        (ACCEPTABLE, _t('Preenchida')),
-        (QUEUED_FOR_PAY, _t('Em fila para poder pagar')),
-        (EXPECTING_PAY, _t('Aguardando pagamento')),
-        (VERIFYING_PAY, _t('Verificando pagamento')),
-        (PARTIALLY_PAID, _t('Parcialmente paga')),
-        (UNPAID_STAFF, _t('Tripulante não pago')),
-        (CONFIRMED, _t('Confirmada')),
-        (VERIFYING_DATA, _t('Verificando dados')),
-        (DENIED, _t('Rejeitada')),
+        (NEW, _t('New')),
+        (ACCEPTABLE, _t('Filled')),
+        (QUEUED_FOR_PAY, _t('Queued for pay')),
+        (EXPECTING_PAY, _t('Expecting payment')),
+        (VERIFYING_PAY, _t('Verifying payment')),
+        (PARTIALLY_PAID, _t('Partially paid')),
+        (UNPAID_STAFF, _t('Unpaid staff')),
+        (CONFIRMED, _t('Confirmed')),
+        (VERIFYING_DATA, _t('Checking data')),
+        (DENIED, _t('Rejected')),
     )
 
 

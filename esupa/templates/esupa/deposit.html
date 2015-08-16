@@ -7,21 +7,20 @@
 
     <div class="row">
         <div class="large-12 columns">
-            <h4>{% trans "Fazer um depósito bancário" %}</h4>
+            <h4>{% trans "Bank Transfer" %}</h4>
 
-            <p>{% blocktrans %} Você pode fazer um ou mais depósitos diretamente na conta de um tripulante e ir anexando
-                os comprovantes nesta tela. Quando o total chegar ao valor da inscrição, a tesouraria do Abando
-                confirmará sua vaga. Até lá, guardaremos com carinho seu lugar para que possa completar os
-                pagamentos. {% endblocktrans %}</p>
+            <p>{% blocktrans %} You may wire a bank transfer straight to a staffer's account,
+                and attach the receipts here. When you reach the total subscription value,
+                your slot will be confirmed. {% endblocktrans %}</p>
         </div>
     </div>
     <div class="row deposit">
         <div class="large-12 columns">
             {{form.as_p}}
             <p class='buttons'>
-                <input type="submit" value='&nbsp; {% trans "Enviar" %} &nbsp;' class="button"/>
+                <input type="submit" value='&nbsp; {% trans "Send" %} &nbsp;' class="button"/>
                 <a class="button secondary" href="{% url 'esupa-view' event.slug %}">&nbsp;
-                    {% trans "Voltar" %} &nbsp;</a>
+                    {% trans "Back" %} &nbsp;</a>
             </p>
         </div>
     </div>

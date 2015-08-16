@@ -30,7 +30,7 @@ log = getLogger(__name__)
 
 class PaymentMethod(PaymentBase):
     CODE = 1
-    TITLE = _t('Depósito Bancário')
+    TITLE = _t('Bank Transfer')
 
     def start_payment(self, request: HttpRequest, amount) -> HttpResponse:
         self.transaction = self.transactions(method=self.CODE, filled_at__isnull=True).first()
@@ -73,13 +73,13 @@ class PaymentMethod(PaymentBase):
 
 
 class DepositForm(forms.Form):
-    amount = forms.DecimalField(label=_t('Valor depositado'), max_digits=7, decimal_places=2)
-    upload = forms.FileField(label=_t('Comprovante'))
+    amount = forms.DecimalField(label=_t('Amount Transferred'), max_digits=7, decimal_places=2)
+    upload = forms.FileField(label=_t('Receipt'))
 
     def __init__(self, transaction: Transaction, *args, **kwargs):
         forms.Form.__init__(self, *args, **kwargs)
         subscription = transaction.subscription
-        fmt = _tt('Deposite até R$ %(price)s na conta abaixo e envie foto ou scan do comprovante.\n%(info)s')
+        fmt = _tt("Transfer up to R$ %(price)s to this bank account and send a receipt image.\n%(info)s")
         msg = fmt % {'price': subscription.price, 'info': subscription.event.deposit_info}
         self.fields['upload'].help_text = msg.replace('\n', '\n<br/>')
         self.fields['amount'].initial = transaction.amount

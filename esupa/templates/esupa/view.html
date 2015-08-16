@@ -6,47 +6,47 @@
     <div class="row">
         <div class="large-12 columns">
             <p>
-                {% trans "Sua inscrição está:" %} <strong>{{state}}</strong>
+                {% trans "Your subscription is:" %} <strong>{{state}}</strong>
             </p>
             {% if state.value >= state.CONFIRMED %}
             <p>
-                {% blocktrans with name=event.name %} Nos vemos no {{name}}! {% endblocktrans %}
+                {% blocktrans with name=event.name %} We'll meet at {{name}}! {% endblocktrans %}
             </p>
             {% elif state.value <= state.QUEUED_FOR_PAY %}
             <p class="buttons">
                 <a class="button secondary" href="{% url 'esupa-edit' event.slug %}">&nbsp;
-                    {% trans "Editar" %} &nbsp;</a>
+                    {% trans "Edit" %} &nbsp;</a>
             </p>
             {% endif %}
             <ul>
-                <li>{% trans "Nome legal:" %} <strong>{{sub.full_name}}</strong></li>
-                <li>{% trans "Documento:" %} <strong>{{sub.document}}</strong></li>
-                <li>{% trans "Crachá:" %} <strong>{{sub.badge}}</strong></li>
+                <li>{% trans "Legal name:" %} <strong>{{sub.full_name}}</strong></li>
+                <li>{% trans "Document:" %} <strong>{{sub.document}}</strong></li>
+                <li>{% trans "Badge:" %} <strong>{{sub.badge}}</strong></li>
                 <li>{% trans "Email:" %} <strong>{{sub.email}}</strong></li>
-                <li>{% trans "Celular:" %} <strong>{{sub.phone}}</strong></li>
-                <li>{% trans "Nascimento:" %} <strong>{{sub.born}}</strong></li>
-                <li>{% trans "Camiseta:" %} <strong>{{sub.shirt_size}}</strong></li>
-                <li>{% trans "Tipo sanguíneo:" %} <strong>{{sub.blood}}</strong></li>
-                <li>{% trans "Possui plano de saúde?" %} <strong>{{sub.health_insuled|yesno}}</strong></li>
-                <li>{% trans "Contato de emergência:" %} <strong>{{sub.contact}}</strong></li>
-                <li>{% trans "Informações médicas rotineiras e de emergência:" %}
+                <li>{% trans "Mobile:" %} <strong>{{sub.phone}}</strong></li>
+                <li>{% trans "Birth date:" %} <strong>{{sub.born}}</strong></li>
+                <li>{% trans "Shirt:" %} <strong>{{sub.shirt_size}}</strong></li>
+                <li>{% trans "Blood type:" %} <strong>{{sub.blood}}</strong></li>
+                <li>{% trans "Local health coverage?" %} <strong>{{sub.health_insuled|yesno}}</strong></li>
+                <li>{% trans "Emergency contact:" %} <strong>{{sub.contact}}</strong></li>
+                <li>{% trans "Medical information:" %}
                     <strong>{{sub.medication}}</strong></li>
-                <li>{% trans "Opcionais:" %} <strong>{% for opt in sub.optionals.all %}
-                    {{opt.name}}{% if not forloop.last %}, {% endif %}{% empty %}{% trans "nenhum" %}{% endfor %}
+                <li>{% trans "Optionals:" %} <strong>{% for opt in sub.optionals.all %}
+                    {{opt.name}}{% if not forloop.last %}, {% endif %}{% empty %}{% trans "none" %}{% endfor %}
                 </strong></li>
                 <li>{% blocktrans with url=event.agreement_url %}
-                    Leu e concordou com o <a href="{{url}}">regulamento</a>?
+                    Agreed to <a href="{{url}}">terms and conditions</a>?
                     {% endblocktrans %}
                     <strong>{{sub.agreed|yesno}}</strong></li>
             </ul>
-            <p>{% trans "Valor da inscrição:" %} R$ {{sub.price}}</p>
+            <p>{% trans "Subscription value:" %} R$ {{sub.price}}</p>
             {% if confirmed_trans %}
-            <p>{% trans "Pagamentos confirmados:" %}</p>
+            <p>{% trans "Confirmed payments:" %}</p>
             <ul>
                 {% for trans in confirmed_trans.all %}
                 <li>
                     {% blocktrans with amount=trans.amount when=trans.filled_at %}
-                    R$ {{amount}} (há {{when|timesince}})
+                    R$ {{amount}} <span title="{{when}}">({{when|timesince}} ago)</span>
                     {% endblocktrans %}
                 </li>
                 {% endfor %}
@@ -54,20 +54,20 @@
             </ul>
             {% endif %}
             {% if pending_trans %}
-            <p>{% trans "Pagamentos sendo verificados:" %}</p>
+            <p>{% trans "Payments under review:" %}</p>
             <ul>
                 {% for trans in pending_trans.all %}
                 <li>
                     {% blocktrans with amount=trans.amount when=trans.filled_at %}
-                    R$ {{amount}} (há {{when|timesince}})
+                    R$ {{amount}} <span title="{{when}}">({{when|timesince}} ago)</span>
                     {% endblocktrans %}
-                    <a href="{% url 'esupa-trans-doc' trans.id %}">Ver anexo.</a>
+                    <a href="{% url 'esupa-trans-doc' trans.id %}">See attachment.</a>
                 </li>
                 {% endfor %}
             </ul>
             {% endif %}
             {% if sub.state != state.QUEUED_FOR_PAY and sub.state < state.CONFIRMED %}
-            <h4>{% trans "Pagar seu registro usando" %}</h4>
+            <h4>{% trans "Pay using" %}</h4>
             {{partial_pay_form.as_p}}
             <p class='buttons'>
                 {% for slug, title in pay_buttons.items %}

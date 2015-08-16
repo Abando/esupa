@@ -52,30 +52,29 @@ class Notifier:
 
     def can_pay(self):
         """This can happen in two cases, (1) esupa staff data verify accepted, or (2) the queue moved."""
-        self._send(_tt('Pagamento Liberado'),
-                   _tt('Sua inscrição está pronta para ser paga. Após o pagamento, ela será '
-                       'confirmada, e sua vaga estará garantida.'))
+        self._send(_tt("Payment Available"),
+                   _tt("Your subscription may be paid now. After payment is confirmed, the spot is yours."))
 
     def expired(self):
         """This means we've waited too long and the subscription can no longer be paid."""
         hours = self.s.event.payment_wait_hours
-        self._send(_tt('Pagamento Vencido'),
-                   _tt('O seu prazo de %d horas para pagar venceu e você foi retirado da fila de pagamento.') % hours)
+        self._send(_tt("Payment Expired"),
+                   _tt("Your %d hour deadline was missed and you've been moved off the payment queue.") % hours)
 
     def data_denied(self):
         """Esupa staff data verify failed."""
-        self._send(_tt('Inscrição Negada'),
-                   _tt('Seus dados foram verificados e sua inscrição foi negada.'))
+        self._send(_tt("Subscription Denied"),
+                   _tt("Your data has been verified and your subscription has been denied."))
 
     def confirmed(self):
         """Pay has been accepted."""
-        self._send(_tt('Inscriçao Confirmada'),
-                   _tt('Bem vindo! Sua inscrição está confirmada. :)'))
+        self._send(_tt("Subscription Confirmed"),
+                   _tt("Welcome! Your subscription is confirmed. :)"))
 
     def pay_denied(self):
         """Pay has been denied by the processor."""
-        self._send(_tt('Pagamento Cancelado'),
-                   _tt('O seu pagamento foi cancelado pela operadora de pagamento.'))
+        self._send(_tt("Payment Cancelled"),
+                   _tt("The payment processor has cancelled your payment."))
 
     def staffer_action_required(self, build_absolute_uri):
         """Sent to staffers, telling them that they're supposed to verify some data."""
