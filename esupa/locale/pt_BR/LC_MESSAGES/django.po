@@ -382,7 +382,8 @@ msgid ""
 "                    "
 msgstr ""
 "\n"
-"                    R$ %(amount)s (há %(when|timesince)s)\n"
+"                    R$ %(amount)s <span title=\"%(when)s"
+"\">(há %(when|timesince)s)</span>\n"
 "                    "
 
 #: templates/esupa/view.html:53
