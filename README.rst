@@ -22,6 +22,7 @@ Installation
 - ``cd`` *<project-name>*
 - ``git clone`` https://bitbucket.org/abando/esupa.git
 - Add ``esupa`` to your project's ``INSTALLED_APPS`` and ``urls.py``
+- ``manage.py compilemessages`` (optional; only needed for localization)
 
 .. _Python 3: https://www.python.org/downloads/
 .. _django: https://www.djangoproject.com/
@@ -31,7 +32,8 @@ Installation
 Usage
 -----
 
-You must set up a registration and authenticiation application (I use python3-oneall_).
+You must set up a registration and authenticiation application.
+Just ``django.contrib.auth`` does the job, but I use python3-oneall_.
 
 Then use the Django Administration panel to create a new Event. Make sure to set its date in the future.
 
@@ -50,18 +52,17 @@ Contribution guidelines
 
 - Roadmap:
 
-  - Add support for PayPal_, then maybe some others like Payza_, BCash_, Moip_.
-  - Internationalization and localization (i18n and l10n if you must).
-  - Split edit and view mode templates in the subscription view.
   - Have each Event have its own staff list, deal with permissions based on that. Some with read permissions only.
-  - Add support for partial payments. Let people have their own installments or split among different processors.
 
-    - These people's reservations should last proportionately to the amount they've paid.
+- These would be nice too, but aren't pressing issues for now.
+
+  - Add support more payment processors. Payza_? BCash_?, Moip_?
+  - Localization of optionals and other database-stored strings.
+  - Flesh out partial payments. How should new expiry dates be calculated?
 
 .. _PEP-8: https://www.python.org/dev/peps/pep-0008/
 .. _PEP-20: https://www.python.org/dev/peps/pep-0020/
 .. _PEP-257: https://www.python.org/dev/peps/pep-0257/
-.. _PayPal: https://www.paypal.com/
 .. _Payza: https://www.payza.com/
 .. _BCash: https://www.bcash.com.br/
 .. _Moip: https://moip.com.br/
