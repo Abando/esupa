@@ -56,7 +56,7 @@ Contribution guidelines
 
 - These would be nice too, but aren't pressing issues for now.
 
-  - Add support more payment processors. Payza_? BCash_?, Moip_?
+  - Add support more payment processors. Payza_? BCash_? Moip_?
   - Localization of optionals and other database-stored strings.
   - Flesh out partial payments. How should new expiry dates be calculated?
 
