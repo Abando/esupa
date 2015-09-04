@@ -6,9 +6,9 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: 0.3\n"
+"Project-Id-Version: 0.3.0.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-08-15 23:25-0300\n"
+"POT-Creation-Date: 2015-09-04 02:50-0300\n"
 "PO-Revision-Date: 2015-08-09 16:00-0400\n"
 "Last-Translator: Ekevoo\n"
 "Language-Team: Portuguese (Brazil) <pt_BR@li.org>\n"
@@ -288,72 +288,72 @@ msgstr "Salvar Edições"
 msgid "Cancel Edit"
 msgstr "Cancelar Edição"
 
-#: templates/esupa/view.html:9
+#: templates/esupa/view.html:10
 msgid "Your subscription is:"
 msgstr "Sua inscrição está:"
 
-#: templates/esupa/view.html:13
+#: templates/esupa/view.html:14
 #, python-format
 msgid " We'll meet at %(name)s! "
 msgstr " Nos vemos no %(name)s! "
 
-#: templates/esupa/view.html:18
+#: templates/esupa/view.html:19
 msgid "Edit"
 msgstr "Editar"
 
-#: templates/esupa/view.html:22
+#: templates/esupa/view.html:23
 msgid "Legal name:"
 msgstr "Nome legal:"
 
-#: templates/esupa/view.html:23
+#: templates/esupa/view.html:24
 msgid "Document:"
 msgstr "Documento:"
 
-#: templates/esupa/view.html:24
+#: templates/esupa/view.html:25
 msgid "Badge:"
 msgstr "Crachá:"
 
-#: templates/esupa/view.html:25
+#: templates/esupa/view.html:26
 msgid "Email:"
 msgstr "Email:"
 
-#: templates/esupa/view.html:26
+#: templates/esupa/view.html:27
 msgid "Mobile:"
 msgstr "Celular:"
 
-#: templates/esupa/view.html:27
+#: templates/esupa/view.html:28
 msgid "Birth date:"
 msgstr "Nascimento:"
 
-#: templates/esupa/view.html:28
+#: templates/esupa/view.html:29
 msgid "Shirt:"
 msgstr "Camiseta:"
 
-#: templates/esupa/view.html:29
+#: templates/esupa/view.html:30
 msgid "Blood type:"
 msgstr "Tipo sanguíneo:"
 
-#: templates/esupa/view.html:30
+#: templates/esupa/view.html:31
 msgid "Local health coverage?"
 msgstr "Possui plano de saúde?"
 
-#: templates/esupa/view.html:31
+#: templates/esupa/view.html:32
 msgid "Emergency contact:"
 msgstr "Contato de emergência:"
 
-#: templates/esupa/view.html:32
+#: templates/esupa/view.html:33
 msgid "Medical information:"
 msgstr "Informações médicas rotineiras e de emergência:"
 
-#: templates/esupa/view.html:34
+#: templates/esupa/view.html:35
 msgid "Optionals:"
 msgstr "Opcionais:"
 
-#: templates/esupa/view.html:35
+#: templates/esupa/view.html:36
 msgid "none"
 msgstr "nenhum"
 
-#: templates/esupa/view.html:37
+#: templates/esupa/view.html:38
 #, python-format
 msgid ""
 "\n"
@@ -365,38 +365,43 @@ msgstr ""
 "a>?\n"
 "                    "
 
-#: templates/esupa/view.html:42
+#: templates/esupa/view.html:43
 msgid "Subscription value:"
 msgstr "Valor da inscrição:"
 
-#: templates/esupa/view.html:44
+#: templates/esupa/view.html:45
 msgid "Confirmed payments:"
 msgstr "Pagamentos confirmados:"
 
-#: templates/esupa/view.html:48 templates/esupa/view.html.py:61
-#, python-format
-msgid ""
-"\n"
-"                    R$ %(amount)s <span title=\"%(when)s"
-"\">(%(when|timesince)s ago)</span>\n"
-"                    "
-msgstr ""
-"\n"
-"                    R$ %(amount)s <span title=\"%(when)s"
-"\">(há %(when|timesince)s)</span>\n"
-"                    "
-
-#: templates/esupa/view.html:53
+#: templates/esupa/view.html:50
 msgid "Total:"
 msgstr "Total:"
 
-#: templates/esupa/view.html:57
+#: templates/esupa/view.html:54
 msgid "Payments under review:"
 msgstr "Pagamentos sendo verificados:"
 
-#: templates/esupa/view.html:70
+#: templates/esupa/view.html:59
+msgid "See attachment."
+msgstr "Ver anexo."
+
+#: templates/esupa/view.html:65
 msgid "Pay using"
 msgstr "Pagar seu registro usando"
+
+#: templatetags/esupa.py:29
+msgid "just now"
+msgstr "agora"
+
+#: templatetags/esupa.py:31
+#, python-format
+msgid "%s ago"
+msgstr "há %s"
+
+#: templatetags/esupa.py:33
+#, python-format
+msgid "in %s"
+msgstr "em %s"
 
 #: views.py:54
 msgid "There is no event. Create one in /admin/"

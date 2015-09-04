@@ -1,5 +1,6 @@
 {% extends 'esupa/base.html' %}
 {% load i18n %}
+{% load esupa %}
 {% block content %}
 <form method="post" action="{% url 'esupa-view' event.slug %}" id="formView" enctype="multipart/form-data">
     {% csrf_token %}
@@ -44,11 +45,7 @@
             <p>{% trans "Confirmed payments:" %}</p>
             <ul>
                 {% for trans in confirmed_trans.all %}
-                <li>
-                    {% blocktrans with amount=trans.amount when=trans.filled_at %}
-                    R$ {{amount}} <span title="{{when}}">({{when|timesince}} ago)</span>
-                    {% endblocktrans %}
-                </li>
+                <li>R$ {{trans.amount}} ({{trans.filled_at|relative}})</li>
                 {% endfor %}
                 <li>{% trans "Total:" %} R$ {{sub.paid}}</li>
             </ul>
@@ -58,10 +55,8 @@
             <ul>
                 {% for trans in pending_trans.all %}
                 <li>
-                    {% blocktrans with amount=trans.amount when=trans.filled_at %}
-                    R$ {{amount}} <span title="{{when}}">({{when|timesince}} ago)</span>
-                    {% endblocktrans %}
-                    <a href="{% url 'esupa-trans-doc' trans.id %}">See attachment.</a>
+                    R$ {{trans.amount}} ({{trans.filled_at|relative}})
+                    <a href="{% url 'esupa-trans-doc' trans.id %}">{% trans "See attachment." %}</a>
                 </li>
                 {% endfor %}
             </ul>

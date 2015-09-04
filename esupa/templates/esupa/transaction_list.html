@@ -3,6 +3,7 @@
 <head lang="en">
     <meta charset="UTF-8">
     <title>{{sub.badge}} ({{sub.id}}) - {{event.name}} ({{event.id}})</title>
+    {% load esupa %}
 </head>
 <body>
 <form method="post" id="checkerForm">{% csrf_token %}
@@ -49,8 +50,8 @@
             <td>{{t.id}}</td>
             <td>{{t.amount}}</td>
             <td>{{t.str_method}}</td>
-            <td title="{{t.created_at}}">{{t.created_at|timesince}}</td>
-            <td title="{{t.filled_at}}">{{t.filled_at|timesince}}</td>
+            <td>{{t.created_at|relative}}</td>
+            <td>{{t.filled_at|relative}}</td>
             <td>
                 {% if t.mimetype %}
                 <a href="{% url 'esupa-trans-doc' t.id %}">{{t.mimetype}}</a>
@@ -58,7 +59,7 @@
                 &mdash;
                 {% endif %}
             </td>
-            <td title="{{t.ended_at}}">{{t.ended_at|timesince}}</td>
+            <td>{{t.ended_at|relative}}</td>
             <td>
                 {% if not t.ended_at %}
                     {% if t.method != 1 %}
