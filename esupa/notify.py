@@ -31,7 +31,7 @@ def _mail(recipients, subject, body):
     def mail():
         try:
             log.info("Trying to send %s to %s about %s", it, ','.join(recipients), subject)
-            EmailMessage(subject, body, to=recipients).send(fail_silently=True)
+            EmailMessage(subject, ''.join(body), to=recipients).send(fail_silently=True)
             log.info("Sent %s alright", it)
         except ConnectionRefusedError:
             log.error("Connection failed for %s to %s", it, ','.join(recipients), exc_info=True)

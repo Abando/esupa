@@ -228,7 +228,6 @@ class Subscription(models.Model):
                    .aggregate(models.Sum('amount'))['amount__sum'] or Decimal(0)
 
     def get_owing(self) -> Decimal:
-        log.warn('calculated!')
         return self.price - self.paid
 
     @property
