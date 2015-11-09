@@ -149,6 +149,13 @@ class Event(models.Model):
             self.sales_toggle = None
             self.sales_open = not self.sales_open
 
+    def check_occupancy(self):
+        if self.sales_open and self.num_openings <= 0:
+            self.sales_open = False
+            self.save()
+            from .notify import EventNotifier
+            EventNotifier(self).sales_closed()
+
 
 class Optional(models.Model):
     event = models.ForeignKey(Event)
@@ -194,6 +201,11 @@ class Subscription(models.Model):
             return True
         else:
             return False
+
+    def save(self, *args, **kwargs):
+        result = super().save(*args, **kwargs)
+        self.event.check_occupancy()
+        return result
 
     @property
     def waiting(self) -> bool:

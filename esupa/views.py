@@ -28,7 +28,7 @@ from django.views.generic import ListView
 
 from .forms import SubscriptionForm, PartialPayForm, ManualTransactionForm
 from .models import Event, Subscription, SubsState, Transaction
-from .notify import Notifier
+from .notify import EventNotifier
 from .payment.base import get_payment, get_payment_names
 from .queue import cron, QueueAgent
 from .utils import named, prg_redirect
@@ -83,6 +83,7 @@ def view(request: HttpRequest, slug: str) -> HttpResponse:
             subscription.position = queue.add()
             subscription.waiting = queue.within_capacity
             subscription.raise_state(SubsState.EXPECTING_PAY if queue.within_capacity else SubsState.QUEUED_FOR_PAY)
+            subscription.save()
             if queue.within_capacity:
                 payment = get_payment(int(request.POST['pay_with']))(subscription)
                 try:
@@ -115,7 +116,7 @@ def edit(request: HttpRequest, slug: str) -> HttpResponse:
         subscription.state = SubsState.ACCEPTABLE if acceptable else SubsState.VERIFYING_DATA
         subscription.save()
         if not acceptable:
-            Notifier(subscription).staffer_action_required(request.build_absolute_uri)
+            EventNotifier(subscription.event).must_check_subscription(subscription, request.build_absolute_uri)
         return view(request, slug)  # may call edit(); it's probably a bug if it does
     else:
         return render(request, 'esupa/edit.html', {

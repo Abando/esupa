@@ -20,7 +20,7 @@ from django.core.mail import EmailMessage
 from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext
 
-from .models import Subscription
+from .models import Event, Subscription
 
 log = getLogger(__name__)
 
@@ -39,9 +39,37 @@ def _mail(recipients, subject, body):
     Thread(target=mail, name=it).start()  # this will come back to bite our butt, rest assured.
 
 
+class EventNotifier:
+    """ Sends e-mails to event staffers. """
+
+    def __init__(self, event: Event):
+        self.e = event
+
+    def _send(self, subject, *body):
+        subject = '[%s] %s' % (self.e.name, subject)
+        recipients = User.objects.filter(is_staff=True).values_list('email', flat=True)
+        _mail(recipients, subject, body)
+
+    def must_check_subscription(self, subscription: Subscription, build_absolute_uri):
+        from .views import TransactionList, SubscriptionList
+        assert subscription.event == self.e
+        subject = 'Check: %s' % subscription.badge
+        body = (
+            'Check subscription #%d (%s):' % (subscription.id, subscription.badge),
+            build_absolute_uri(reverse(TransactionList.name, args=[subscription.id])),
+            '',
+            'All in %s:' % self.e.name,
+            build_absolute_uri(reverse(SubscriptionList.name, args=[self.e.slug])))
+        self._send(subject, *body)
+
+    def sales_closed(self):
+        self._send('Sales closed!', 'Sales closed for event #%d (%s)' % (self.e.id, self.e.name))
+
+
 class Notifier:
-    def __init__(self, subscription):
-        assert isinstance(subscription, Subscription)
+    """ Sends e-mails to subscribers. """
+
+    def __init__(self, subscription: Subscription):
         self.s = subscription
 
     def _send(self, subject, *body):
@@ -75,20 +103,6 @@ class Notifier:
         """Pay has been denied by the processor."""
         self._send(ugettext("Payment Cancelled"),
                    ugettext("The payment processor has cancelled your payment."))
-
-    def staffer_action_required(self, build_absolute_uri):
-        """
-        Sent to staffers, telling them that they're supposed to verify some data.
-        :param func build_absolute_uri: A function that takes a relative uri and returns its absolute path.
-        """
-        from .views import TransactionList, SubscriptionList
-
-        subject = '[%s] check: %s' % (self.s.event.name, self.s.badge)
-        body = 'Check subscription #%d (%s):\n%s\n\nAll in %s:\n%s' % (
-            self.s.id, self.s.badge, build_absolute_uri(reverse(TransactionList.name, args=[self.s.id])),
-            self.s.event.name, build_absolute_uri(reverse(SubscriptionList.name, args=[self.s.event.id])))
-        recipients = User.objects.filter(is_staff=True).values_list('email', flat=True)
-        _mail(recipients, subject, body)
 
 
 class BatchNotifier:
