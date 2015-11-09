@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and limitations under the License.
 #
 from django.apps import AppConfig
-from django.utils.translation import ugettext_lazy as _t
+from django.utils.translation import ugettext_lazy
 
 
 class EsupaConfig(AppConfig):
     name = __name__[:__name__.rindex('.')]
-    verbose_name = _t('esupa - Event Subscription and Payment')
+    verbose_name = ugettext_lazy('esupa - Event Subscription and Payment')

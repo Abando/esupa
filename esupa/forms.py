@@ -19,7 +19,7 @@ from django.forms import widgets
 from django.utils import formats
 from django.utils.safestring import mark_safe
 from django.utils.timezone import now
-from django.utils.translation import ugettext_lazy as _t, ugettext as _tt
+from django.utils.translation import ugettext_lazy, ugettext
 
 from .models import Subscription, Optional
 
@@ -42,48 +42,48 @@ class ModelPricedOptInField(forms.ModelMultipleChoiceField):
 
 class SubscriptionForm(forms.ModelForm):
     full_name = forms.CharField(
-        label=_t('Full name'),
-        help_text=_t('As in legal documentation.'))
+        label=ugettext_lazy('Full name'),
+        help_text=ugettext_lazy('As in legal documentation.'))
     document = forms.CharField(
-        label=_t('ID'),
-        help_text=_t('Type of document and its number.'))
+        label=ugettext_lazy('ID'),
+        help_text=ugettext_lazy('Type of document and its number.'))
     badge = forms.CharField(
-        label=_t('Badge'),
-        help_text=_t('Name to be printed on con badge.'))
+        label=ugettext_lazy('Badge'),
+        help_text=ugettext_lazy('Name to be printed on con badge.'))
     email = forms.EmailField(
-        label=_t('E-mail'),
-        help_text=_t('For contact before event date.'))
+        label=ugettext_lazy('E-mail'),
+        help_text=ugettext_lazy('For contact before event date.'))
     phone = forms.CharField(
-        label=_t('Cell phone'),
-        help_text=_t('For contact at event date.'))
+        label=ugettext_lazy('Cell phone'),
+        help_text=ugettext_lazy('For contact at event date.'))
     born = forms.DateField(
-        label=_t('Birth date'),
+        label=ugettext_lazy('Birth date'),
         input_formats='%d/%m/%Y %d/%m/%y'.split(),
-        help_text=_t('Write in international format (DD/MM/YYYY).'))
+        help_text=ugettext_lazy('Write in international format (DD/MM/YYYY).'))
     shirt_size = forms.ChoiceField(
-        label=_t('Shirt size'),
+        label=ugettext_lazy('Shirt size'),
         choices=tuple(map(lambda a: (a, a), 'P M G GG GGG'.split())))
     blood = forms.CharField(
-        label=_t('Blood type'),
+        label=ugettext_lazy('Blood type'),
         required=False,
         max_length=3,
-        help_text=_t("Only if you're sure, blood type and Rh factor, such as O+, AB−, etc."))
+        help_text=ugettext_lazy("Only if you're sure, blood type and Rh factor, such as O+, AB−, etc."))
     health_insured = forms.BooleanField(
-        label=_t('Do you have private health plan coverage in the region?'),
+        label=ugettext_lazy('Do you have private health plan coverage in the region?'),
         required=False)
     contact = forms.CharField(
-        label=_t('Emergency contact'),
+        label=ugettext_lazy('Emergency contact'),
         widget=widgets.Textarea,
-        help_text=_t('Nome, relationship, and phone number with area code.'))
+        help_text=ugettext_lazy('Nome, relationship, and phone number with area code.'))
     medication = forms.CharField(
-        label=_t('Routine and emergency medical information'),
+        label=ugettext_lazy('Routine and emergency medical information'),
         required=False,
         widget=widgets.Textarea,
-        help_text=_t(
+        help_text=ugettext_lazy(
             "Routine medication, crisis medication, blood pressure, diabetes, breathing conditions, heart "
             "conditions, food or medication allergies, any sort of condition that requires special care."))
-    optionals = ModelPricedOptInField(label=_t('Optional'), required=False)
-    agreed = forms.BooleanField(label=_t('Read and agreed to [terms and conditions].'))
+    optionals = ModelPricedOptInField(label=ugettext_lazy('Optional'), required=False)
+    agreed = forms.BooleanField(label=ugettext_lazy('Read and agreed to [terms and conditions].'))
 
     class Meta:
         model = Subscription
@@ -102,7 +102,7 @@ class SubscriptionForm(forms.ModelForm):
         born = self.cleaned_data['born']
         if born > self.max_born:
             raise ValidationError(
-                _tt('Must be born until %(date)s.'),
+                ugettext('Must be born until %(date)s.'),
                 code='too_young',
                 params={'date': self.max_born},
             )
@@ -121,14 +121,14 @@ class SubscriptionForm(forms.ModelForm):
         if not event.min_age:
             return
         when = formats.date_format(event.starts_at, 'DATE_FORMAT').lower()
-        warning = _tt('You must be %(age)d or older at %(when)s.') % {'age': event.min_age, 'when': when}
+        warning = ugettext('You must be %(age)d or older at %(when)s.') % {'age': event.min_age, 'when': when}
         self.fields['born'].help_text += ' ' + warning
 
 
 class PartialPayForm(forms.Form):
     amount = forms.DecimalField(
-        label=_t('Amount to be paid'),
-        help_text=_t('You can pay partially to combine different payment methods.'))
+        label=ugettext_lazy('Amount to be paid'),
+        help_text=ugettext_lazy('You can pay partially to combine different payment methods.'))
 
     def __init__(self, amount):
         super().__init__({'amount': amount})

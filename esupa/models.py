@@ -19,7 +19,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.timezone import now
-from django.utils.translation import ugettext_lazy as _t, ugettext as _tt
+from django.utils.translation import ugettext_lazy, ugettext
 
 log = getLogger(__name__)
 PriceField = lambda: models.DecimalField(max_digits=7, decimal_places=2)
@@ -30,7 +30,8 @@ def slug_blacklist_validator(target):
 
     if target in slug_blacklist:
         # Translators: This is only displayed in the Django Admin page.
-        raise ValidationError(_tt('To avoid name clashes, these slugs are not allowed: ') + ', '.join(slug_blacklist))
+        raise ValidationError(ugettext('To avoid name clashes, these slugs are not allowed: ') +
+                              ', '.join(slug_blacklist))
 
 
 class Enum:
@@ -84,16 +85,16 @@ class SubsState(Enum):
     DENIED = -9
     # Translators: This is the list of possible subscription states.
     choices = (
-        (NEW, _t('New')),
-        (ACCEPTABLE, _t('Filled')),
-        (QUEUED_FOR_PAY, _t('Queued for pay')),
-        (EXPECTING_PAY, _t('Expecting payment')),
-        (VERIFYING_PAY, _t('Verifying payment')),
-        (PARTIALLY_PAID, _t('Partially paid')),
-        (UNPAID_STAFF, _t('Unpaid staff')),
-        (CONFIRMED, _t('Confirmed')),
-        (VERIFYING_DATA, _t('Checking data')),
-        (DENIED, _t('Rejected')),
+        (NEW, ugettext_lazy('New')),
+        (ACCEPTABLE, ugettext_lazy('Filled')),
+        (QUEUED_FOR_PAY, ugettext_lazy('Queued for pay')),
+        (EXPECTING_PAY, ugettext_lazy('Expecting payment')),
+        (VERIFYING_PAY, ugettext_lazy('Verifying payment')),
+        (PARTIALLY_PAID, ugettext_lazy('Partially paid')),
+        (UNPAID_STAFF, ugettext_lazy('Unpaid staff')),
+        (CONFIRMED, ugettext_lazy('Confirmed')),
+        (VERIFYING_DATA, ugettext_lazy('Checking data')),
+        (DENIED, ugettext_lazy('Rejected')),
     )
 
 
@@ -119,8 +120,7 @@ class Event(models.Model):
 
     def current_subscription_stats(self):
         sfilter = self.subscription_set.filter
-        filtered_count = lambda tu: sfilter(state=tu[0]).count()
-        return map(filtered_count, SubsState.choices)
+        return map(lambda tu: sfilter(state=tu[0]).count(), SubsState.choices)
 
     @property
     def num_confirmed(self):
@@ -252,7 +252,7 @@ class Transaction(models.Model):
     def end(self, sucessfully) -> bool:
         """
         Closes a transaction, and will propagate the appropriate changes to the belonging subscription.
-
+        :param bool sucessfully: Whether the transaction is ending successfully or not.
         :return bool: Whether the state of the subscription was changed.
         """
         self.accepted = sucessfully

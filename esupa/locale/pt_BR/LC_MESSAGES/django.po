@@ -143,43 +143,43 @@ msgstr ""
 msgid "To avoid name clashes, these slugs are not allowed: "
 msgstr "Para evitar conflitos de nome, estes slugs são proibidos: "
 
-#: models.py:87
+#: models.py:88
 msgid "New"
 msgstr "Nova"
 
-#: models.py:88
+#: models.py:89
 msgid "Filled"
 msgstr "Preenchida"
 
-#: models.py:89
+#: models.py:90
 msgid "Queued for pay"
 msgstr "Em fila para poder pagar"
 
-#: models.py:90
+#: models.py:91
 msgid "Expecting payment"
 msgstr "Aguardando pagamento"
 
-#: models.py:91
+#: models.py:92
 msgid "Verifying payment"
 msgstr "Verificando pagamento"
 
-#: models.py:92
+#: models.py:93
 msgid "Partially paid"
 msgstr "Parcialmente paga"
 
-#: models.py:93
+#: models.py:94
 msgid "Unpaid staff"
 msgstr "Tripulante não pago"
 
-#: models.py:94
+#: models.py:95
 msgid "Confirmed"
 msgstr "Confirmada"
 
-#: models.py:95
+#: models.py:96
 msgid "Checking data"
 msgstr "Verificando dados"
 
-#: models.py:96
+#: models.py:97
 msgid "Rejected"
 msgstr "Rejeitada"
 

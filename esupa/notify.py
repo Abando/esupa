@@ -18,7 +18,7 @@ from threading import Thread
 from django.contrib.auth.models import User
 from django.core.mail import EmailMessage
 from django.core.urlresolvers import reverse
-from django.utils.translation import ugettext as _tt
+from django.utils.translation import ugettext
 
 from .models import Subscription
 
@@ -52,32 +52,35 @@ class Notifier:
 
     def can_pay(self):
         """This can happen in two cases, (1) esupa staff data verify accepted, or (2) the queue moved."""
-        self._send(_tt("Payment Available"),
-                   _tt("Your subscription may be paid now. After payment is confirmed, the spot is yours."))
+        self._send(ugettext("Payment Available"),
+                   ugettext("Your subscription may be paid now. After payment is confirmed, the spot is yours."))
 
     def expired(self):
         """This means we've waited too long and the subscription can no longer be paid."""
         hours = self.s.event.payment_wait_hours
-        self._send(_tt("Payment Expired"),
-                   _tt("Your %d hour deadline was missed and you've been moved off the payment queue.") % hours)
+        self._send(ugettext("Payment Expired"),
+                   ugettext("Your %d hour deadline was missed and you've been moved off the payment queue.") % hours)
 
     def data_denied(self):
         """Esupa staff data verify failed."""
-        self._send(_tt("Subscription Denied"),
-                   _tt("Your data has been verified and your subscription has been denied."))
+        self._send(ugettext("Subscription Denied"),
+                   ugettext("Your data has been verified and your subscription has been denied."))
 
     def confirmed(self):
         """Pay has been accepted."""
-        self._send(_tt("Subscription Confirmed"),
-                   _tt("Welcome! Your subscription is confirmed. :)"))
+        self._send(ugettext("Subscription Confirmed"),
+                   ugettext("Welcome! Your subscription is confirmed. :)"))
 
     def pay_denied(self):
         """Pay has been denied by the processor."""
-        self._send(_tt("Payment Cancelled"),
-                   _tt("The payment processor has cancelled your payment."))
+        self._send(ugettext("Payment Cancelled"),
+                   ugettext("The payment processor has cancelled your payment."))
 
     def staffer_action_required(self, build_absolute_uri):
-        """Sent to staffers, telling them that they're supposed to verify some data."""
+        """
+        Sent to staffers, telling them that they're supposed to verify some data.
+        :param func build_absolute_uri: A function that takes a relative uri and returns its absolute path.
+        """
         from .views import TransactionList, SubscriptionList
 
         subject = '[%s] check: %s' % (self.s.event.name, self.s.badge)
