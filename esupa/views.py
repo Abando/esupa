@@ -11,8 +11,8 @@
 # distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 #
-from logging import getLogger
 from decimal import Decimal, DecimalException
+from logging import getLogger
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
@@ -155,21 +155,25 @@ def paying(request: HttpRequest, code) -> HttpResponse:
 
 @named('esupa-json-state')
 def json_state(_: HttpRequest, slug: str) -> JsonResponse:
+    result = JsonResponse(_json_state(slug))
+    result['Access-Control-Allow-Origin'] = '*'
+    return result
+
+
+def _json_state(slug: str) -> dict:
     try:
         event = Event.objects.get(slug=slug)
     except Event.DoesNotExist:
-        return JsonResponse({'exists': False, 'slug': slug})
+        return {'exists': False, 'slug': slug}
     threshold = event.reveal_openings_under
     potentially = max(0, event.capacity - event.num_confirmed)
     currently = max(0, potentially - event.num_pending)
     if threshold > 0:
         potentially = str(threshold) + '+' if potentially > threshold else str(potentially)
         currently = str(threshold) + '+' if currently > threshold else str(currently)
-    result = JsonResponse({'exists': True, 'slug': slug, 'id': event.id,
-                           'registrationOpen': event.subs_open, 'salesOpen': event.sales_open,
-                           'potentiallyAvailable': potentially, 'currentlyAvailable': currently})
-    result['Access-Control-Allow-Origin'] = '*'
-    return result
+    return {'exists': True, 'slug': slug, 'id': event.id,
+            'registrationOpen': event.subs_open, 'salesOpen': event.sales_open,
+            'potentiallyAvailable': potentially, 'currentlyAvailable': currently}
 
 
 class EsupaListView(ListView):
