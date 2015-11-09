@@ -165,9 +165,11 @@ def json_state(_: HttpRequest, slug: str) -> JsonResponse:
     if threshold > 0:
         potentially = str(threshold) + '+' if potentially > threshold else str(potentially)
         currently = str(threshold) + '+' if currently > threshold else str(currently)
-    return JsonResponse({'exists': True, 'slug': slug, 'id': event.id,
-                         'registrationOpen': event.subs_open, 'salesOpen': event.sales_open,
-                         'potentiallyAvailable': potentially, 'currentlyAvailable': currently})
+    result = JsonResponse({'exists': True, 'slug': slug, 'id': event.id,
+                           'registrationOpen': event.subs_open, 'salesOpen': event.sales_open,
+                           'potentiallyAvailable': potentially, 'currentlyAvailable': currently})
+    result['Access-Control-Allow-Origin'] = '*'
+    return result
 
 
 class EsupaListView(ListView):
