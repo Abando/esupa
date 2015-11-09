@@ -24,6 +24,8 @@ register = Library()
 
 @register.filter(expects_localtime=True)
 def relative(when, include_span_tag=True):
+    if not when:
+        return ''
     delta = (when - datetime.now(tz=when.tzinfo)).total_seconds()
     if abs(delta) < 10:  # 10 seconds threshold
         text = ugettext(u"just now")
