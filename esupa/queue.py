@@ -126,9 +126,7 @@ def _update_all_subscriptions(event, notify):
             subscription = Subscription.objects.get(id=sid)
         except ObjectDoesNotExist:
             _remove(queue, sid)
-            subscription.wait_until = None
-            subscription.position = None
-            subscription.save()
+            continue
         if subscription.state == SubsState.EXPECTING_PAY and not subscription.waiting:
             _remove(queue, sid)
             subscription.state = SubsState.ACCEPTABLE
