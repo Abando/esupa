@@ -56,9 +56,15 @@ def redirect_to_view_or_edit(request: HttpRequest, slug: str) -> HttpResponse:
 
 def _get_subscription(event_slug: str, user: User) -> Subscription:
     """Takes existing subscription if available, creates a new one otherwise."""
-    event = Event.objects.get(slug=event_slug)
+    try:
+        event = Event.objects.get(slug=event_slug)
+    except Event.DoesNotExist:
+        raise Http404(ugettext('Unknown event "%s"') % event_slug)
     kwargs = dict(event=event, user=user)
-    subscription = Subscription.objects.filter(**kwargs).first() or Subscription(**kwargs)
+    try:
+        subscription = Subscription.objects.get(**kwargs)
+    except Subscription.DoesNotExist:
+        subscription = Subscription(**kwargs)
     if subscription.state == SubsState.DENIED:
         raise PermissionDenied
     return subscription
@@ -96,7 +102,7 @@ def view(request: HttpRequest, slug: str) -> HttpResponse:
         # Avoid an infinite loop. We shouldn't be receiving a POST in this view without a preexisting Subscription.
         raise SuspiciousOperation
     else:
-        return edit(request, slug)  # may call view(); it's probably a bug if it does
+        return prg_redirect(edit.name, slug)
 
 
 @named('esupa-edit')
@@ -104,7 +110,7 @@ def view(request: HttpRequest, slug: str) -> HttpResponse:
 def edit(request: HttpRequest, slug: str) -> HttpResponse:
     subscription = _get_subscription(slug, request.user)
     if subscription.state > SubsState.QUEUED_FOR_PAY:
-        return view(request, slug)  # may call edit(); it's probably a bug if it does
+        return prg_redirect(view.name, slug)
     if not subscription.id:
         subscription.email = subscription.user.email
     form = SubscriptionForm(data=request.POST or None, instance=subscription)
@@ -117,7 +123,7 @@ def edit(request: HttpRequest, slug: str) -> HttpResponse:
         subscription.save()
         if not acceptable:
             EventNotifier(subscription.event).must_check_subscription(subscription, request.build_absolute_uri)
-        return view(request, slug)  # may call edit(); it's probably a bug if it does
+        return prg_redirect(view.name, slug)
     else:
         return render(request, 'esupa/edit.html', {
             'form': form,
