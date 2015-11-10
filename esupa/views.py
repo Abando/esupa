@@ -59,7 +59,7 @@ def _get_subscription(event_slug: str, user: User) -> Subscription:
     try:
         event = Event.objects.get(slug=event_slug)
     except Event.DoesNotExist:
-        raise Http404(ugettext('Unknown event "%s"') % event_slug)
+        raise Http404(ugettext('Unknown event %s.') % event_slug)
     kwargs = dict(event=event, user=user)
     try:
         subscription = Subscription.objects.get(**kwargs)

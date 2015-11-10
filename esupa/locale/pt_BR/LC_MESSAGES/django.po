@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 0.3.0.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-09-04 02:50-0300\n"
+"POT-Creation-Date: 2015-11-10 02:54-0200\n"
 "PO-Revision-Date: 2015-08-09 16:00-0400\n"
 "Last-Translator: Ekevoo\n"
 "Language-Team: Portuguese (Brazil) <pt_BR@li.org>\n"
@@ -183,11 +183,11 @@ msgstr "Verificando dados"
 msgid "Rejected"
 msgstr "Rejeitada"
 
-#: notify.py:55
+#: notify.py:83
 msgid "Payment Available"
 msgstr "Pagamento Liberado"
 
-#: notify.py:56
+#: notify.py:84
 msgid ""
 "Your subscription may be paid now. After payment is confirmed, the spot is "
 "yours."
@@ -195,11 +195,11 @@ msgstr ""
 "Sua inscrição está pronta para ser paga. Após o pagamento, ela será "
 "confirmada, e sua vaga estará garantida."
 
-#: notify.py:61
+#: notify.py:89
 msgid "Payment Expired"
 msgstr "Pagamento Vencido"
 
-#: notify.py:62
+#: notify.py:90
 #, python-format
 msgid ""
 "Your %d hour deadline was missed and you've been moved off the payment queue."
@@ -207,27 +207,27 @@ msgstr ""
 "O seu prazo de %d horas para pagar venceu e você foi retirado da fila de "
 "pagamento."
 
-#: notify.py:66
+#: notify.py:94
 msgid "Subscription Denied"
 msgstr "Inscrição Negada"
 
-#: notify.py:67
+#: notify.py:95
 msgid "Your data has been verified and your subscription has been denied."
 msgstr "Seus dados foram verificados e sua inscrição foi negada."
 
-#: notify.py:71
+#: notify.py:99
 msgid "Subscription Confirmed"
 msgstr "Inscriçao Confirmada"
 
-#: notify.py:72
+#: notify.py:100
 msgid "Welcome! Your subscription is confirmed. :)"
 msgstr "Bem vindo! Sua inscrição está confirmada. :)"
 
-#: notify.py:76
+#: notify.py:104
 msgid "Payment Cancelled"
 msgstr "Pagamento Cancelado"
 
-#: notify.py:77
+#: notify.py:105
 msgid "The payment processor has cancelled your payment."
 msgstr "O seu pagamento foi cancelado pela operadora de pagamento."
 
@@ -389,16 +389,16 @@ msgstr "Ver anexo."
 msgid "Pay using"
 msgstr "Pagar seu registro usando"
 
-#: templatetags/esupa.py:29
+#: templatetags/esupa.py:31
 msgid "just now"
 msgstr "agora"
 
-#: templatetags/esupa.py:31
+#: templatetags/esupa.py:33
 #, python-format
 msgid "%s ago"
 msgstr "há %s"
 
-#: templatetags/esupa.py:33
+#: templatetags/esupa.py:35
 #, python-format
 msgid "in %s"
 msgstr "em %s"
@@ -407,6 +407,11 @@ msgstr "em %s"
 msgid "There is no event. Create one in /admin/"
 msgstr "Nenhum evento cadastrado. Crie um em /admin/"
 
-#: views.py:134
+#: views.py:62
+#, python-format
+msgid "Unknown event %s."
+msgstr "Evento desconhecido %s."
+
+#: views.py:141
 msgid "No such document."
 msgstr "Documento não existe."
