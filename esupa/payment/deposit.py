@@ -11,8 +11,8 @@
 # distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and limitations under the License.
 #
-from logging import getLogger
 from decimal import Decimal
+from logging import getLogger
 
 from django import forms
 from django.core.exceptions import PermissionDenied, SuspiciousOperation
@@ -21,6 +21,7 @@ from django.shortcuts import render
 from django.utils.timezone import now
 from django.utils.translation import ugettext_lazy, ugettext
 
+from esupa.esupa.notify import Notifier
 from .base import PaymentBase
 from ..models import Transaction, SubsState
 from ..utils import prg_redirect
@@ -57,6 +58,9 @@ class PaymentMethod(PaymentBase):
                 raise PermissionDenied
             payment = PaymentMethod(transaction)
             payment.put_file(request.FILES['upload'], request.POST['amount'])
+            Notifier(transaction.subscription).notify_staff(
+                "Uploaded a new deposit file.",
+                request.build_absolute_uri)
             return prg_redirect(payment.my_view_url(request))
         else:
             return PaymentMethod(transaction).start_payment(request, transaction.amount)
