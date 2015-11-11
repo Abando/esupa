@@ -20,7 +20,7 @@ from django.core.mail import EmailMessage
 from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext
 
-from .models import Event, Subscription
+from .models import Event, Subscription, SubsState
 
 log = getLogger(__name__)
 
@@ -31,7 +31,7 @@ def _mail(recipients, subject, body):
     def mail():
         try:
             log.info("Trying to send %s to %s about %s", it, ','.join(recipients), subject)
-            EmailMessage(subject, ''.join(body), to=recipients).send(fail_silently=True)
+            EmailMessage(subject, '\n'.join(body), to=recipients).send(fail_silently=True)
             log.info("Sent %s alright", it)
         except ConnectionRefusedError:
             log.error("Connection failed for %s to %s", it, ','.join(recipients), exc_info=True)
@@ -45,25 +45,13 @@ class EventNotifier:
     def __init__(self, event: Event):
         self.e = event
 
-    def _send(self, subject, *body):
+    def send(self, subject, *body):
         subject = '[%s] %s' % (self.e.name, subject)
         recipients = User.objects.filter(is_staff=True).values_list('email', flat=True)
         _mail(recipients, subject, body)
 
-    def must_check_subscription(self, subscription: Subscription, build_absolute_uri):
-        from .views import TransactionList, SubscriptionList
-        assert subscription.event == self.e
-        subject = 'Check: %s' % subscription.badge
-        body = (
-            'Check subscription #%d (%s):' % (subscription.id, subscription.badge),
-            build_absolute_uri(reverse(TransactionList.name, args=[subscription.id])),
-            '',
-            'All in %s:' % self.e.name,
-            build_absolute_uri(reverse(SubscriptionList.name, args=[self.e.slug])))
-        self._send(subject, *body)
-
     def sales_closed(self):
-        self._send('Sales closed!', 'Sales closed for event #%d (%s)' % (self.e.id, self.e.name))
+        self.send('Sales closed!', 'Sales closed for event #%d (%s)' % (self.e.id, self.e.name))
 
 
 class Notifier:
@@ -103,6 +91,33 @@ class Notifier:
         """Pay has been denied by the processor."""
         self._send(ugettext("Payment Cancelled"),
                    ugettext("The payment processor has cancelled your payment."))
+
+    def saved(self, old_state, build_absolute_uri):
+        from .views import view
+        self._send(
+            ugettext("Subscription Saved"),
+            ugettext("Your changes were saved."),
+            "",
+            ugettext("Your subscription is now: %s") % self.s.str_state,
+            "",
+            ugettext("Should you need to make any further updates go to:"),
+            build_absolute_uri(reverse(view.name, args=[self.s.event.slug])))
+        if old_state != self.s.state:
+            new_state = self.s.state
+            notification = "Changed from %d (%s) to %d (%s)" % (
+                old_state, SubsState(old_state), new_state, SubsState(new_state))
+            self.notify_staff(notification, build_absolute_uri)
+
+    def notify_staff(self, notification: str, build_absolute_uri):
+        from .views import TransactionList, SubscriptionList
+        EventNotifier(self.s.event).send(
+            "Check: %s" % self.s.badge,
+            "Subscription #%d %s %s:" % (self.s.id, self.s.email, self.s.badge),
+            notification,
+            build_absolute_uri(reverse(TransactionList.name, args=[self.s.id])),
+            "",
+            "All in %s:" % self.e.name,
+            build_absolute_uri(reverse(SubscriptionList.name, args=[self.s.event.slug])))
 
 
 class BatchNotifier:

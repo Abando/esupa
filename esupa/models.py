@@ -23,6 +23,7 @@ from django.utils.translation import ugettext_lazy, ugettext
 
 log = getLogger(__name__)
 PriceField = lambda: models.DecimalField(max_digits=7, decimal_places=2)
+decimal_zero = Decimal('0.00')
 
 
 def slug_blacklist_validator(target):
@@ -220,12 +221,16 @@ class Subscription(models.Model):
 
     @property
     def price(self) -> Decimal:
-        return self.event.price + (self.optionals.aggregate(models.Sum('price'))['price__sum'] or 0)
+        return self.event.price + (self.optionals.aggregate(models.Sum('price'))['price__sum'] or decimal_zero)
 
     @property
     def paid(self) -> Decimal:
         return self.transaction_set.filter(accepted=True, ended_at__isnull=False) \
-                   .aggregate(models.Sum('amount'))['amount__sum'] or Decimal(0)
+                   .aggregate(models.Sum('amount'))['amount__sum'] or decimal_zero
+
+    @property
+    def paid_any(self) -> bool:
+        return self.transaction_set.filter(accepted=True, ended_at__isnull=False, amount__gt=0).exists()
 
     def get_owing(self) -> Decimal:
         return self.price - self.paid

@@ -13,12 +13,11 @@
             <p>
                 {% blocktrans with name=event.name %} We'll meet at {{name}}! {% endblocktrans %}
             </p>
-            {% elif state.value <= state.QUEUED_FOR_PAY %}
+            {% endif %}
             <p class="buttons">
                 <a class="button secondary" href="{% url 'esupa-edit' event.slug %}">&nbsp;
                     {% trans "Edit" %} &nbsp;</a>
             </p>
-            {% endif %}
             <ul>
                 <li>{% trans "Legal name:" %} <strong>{{sub.full_name}}</strong></li>
                 <li>{% trans "Document:" %} <strong>{{sub.document}}</strong></li>

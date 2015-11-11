@@ -28,7 +28,7 @@ from django.views.generic import ListView
 
 from .forms import SubscriptionForm, PartialPayForm, ManualTransactionForm
 from .models import Event, Subscription, SubsState, Transaction
-from .notify import EventNotifier
+from .notify import Notifier
 from .payment.base import get_payment, get_payment_names
 from .queue import cron, QueueAgent
 from .utils import named, prg_redirect
@@ -98,9 +98,6 @@ def view(request: HttpRequest, slug: str) -> HttpResponse:
                     amount = subscription.get_owing()
                 return payment.start_payment(request, amount)
         return render(request, 'esupa/view.html', context)
-    elif request.POST:
-        # Avoid an infinite loop. We shouldn't be receiving a POST in this view without a preexisting Subscription.
-        raise SuspiciousOperation
     else:
         return prg_redirect(edit.name, slug)
 
@@ -109,20 +106,26 @@ def view(request: HttpRequest, slug: str) -> HttpResponse:
 @login_required
 def edit(request: HttpRequest, slug: str) -> HttpResponse:
     subscription = _get_subscription(slug, request.user)
-    if subscription.state > SubsState.QUEUED_FOR_PAY:
-        return prg_redirect(view.name, slug)
-    if not subscription.id:
+    if not subscription.id and subscription.user.email:
         subscription.email = subscription.user.email
     form = SubscriptionForm(data=request.POST or None, instance=subscription)
-    if request.POST and form.is_valid() and SubsState.NEW <= subscription.state <= SubsState.QUEUED_FOR_PAY:
+    if request.POST and form.is_valid():
+        old_state = subscription.state
         form.save()
         s = map(str.lower, (subscription.full_name, subscription.email, subscription.document, subscription.badge))
         b = tuple(map(str.lower, filter(bool, subscription.event.data_to_be_checked.splitlines())))
         acceptable = True not in (t in d for d in s for t in b)
-        subscription.state = SubsState.ACCEPTABLE if acceptable else SubsState.VERIFYING_DATA
-        subscription.save()
         if not acceptable:
-            EventNotifier(subscription.event).must_check_subscription(subscription, request.build_absolute_uri)
+            subscription.state = SubsState.VERIFYING_DATA  # Lowers the state.
+        elif subscription.paid_any:
+            if subscription.get_owing() <= 0:
+                subscription.raise_state(SubsState.CONFIRMED)
+            elif subscription.state == SubsState.CONFIRMED:
+                subscription.state = SubsState.PARTIALLY_PAID  # Lowers the state.
+        else:
+            subscription.raise_state(SubsState.ACCEPTABLE)
+        subscription.save()
+        Notifier(subscription).saved(old_state, request.build_absolute_uri)
         return prg_redirect(view.name, slug)
     else:
         return render(request, 'esupa/edit.html', {
@@ -135,7 +138,6 @@ def edit(request: HttpRequest, slug: str) -> HttpResponse:
 @named('esupa-trans-doc')
 @login_required
 def transaction_document(request: HttpRequest, tid) -> HttpResponse:
-    # Add ETag generation & verification… maybe… eventually…
     trans = Transaction.objects.get(id=tid)
     if trans is None or not trans.document:
         raise Http404(ugettext("No such document."))
