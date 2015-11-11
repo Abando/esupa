@@ -244,8 +244,8 @@ msgid "Your subscription is now: %s"
 msgstr "Sua inscrição agora está: %s"
 
 #: notify.py:103
-msgid "Should you need to make any further updates go to:"
-msgstr ""
+msgid "Should you need to make any further updates, go to:"
+msgstr "Caso preciso fazer mais alterações, use o link:"
 
 #: payment/deposit.py:34 templates/esupa/deposit.html:10
 msgid "Bank Transfer"
