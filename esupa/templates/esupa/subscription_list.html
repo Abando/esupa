@@ -53,7 +53,7 @@
                         <td>{{t.amount}}</td>
                         <td title="{{t.created_at}}">{{t.str_method}}</td>
                         <td title="{{t.filled_at}}">
-                            {% if t.filled_at %}
+                            {% if t.mimetype %}
                             <a href="{% url 'esupa-trans-doc' t.id %}">&bull;&bull;&bull;</a>
                             {% else %}
                             &mdash;

@@ -216,7 +216,10 @@ class SubscriptionList(EsupaListView):
     @property
     def event(self) -> Event:
         if not self._event:
-            self._event = Event.objects.get(slug=self.args[0])
+            try:
+                self._event = Event.objects.get(slug=self.args[0])
+            except Event.DoesNotExist:
+                raise Http404
         return self._event
 
     def get_queryset(self):
@@ -241,7 +244,10 @@ class TransactionList(EsupaListView):
     @property
     def subscription(self) -> Subscription:
         if not self._subscription:
-            self._subscription = Subscription.objects.get(id=int(self.args[0]))
+            try:
+                self._subscription = Subscription.objects.get(id=int(self.args[0]))
+            except Subscription.DoesNotExist:
+                raise Http404
             self._event = self._subscription.event
         return self._subscription
 
