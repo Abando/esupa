@@ -17,6 +17,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.forms import widgets
 from django.utils import formats
+from django.utils.formats import get_format
 from django.utils.safestring import mark_safe
 from django.utils.timezone import now
 from django.utils.translation import ugettext_lazy, ugettext
@@ -57,9 +58,7 @@ class SubscriptionForm(forms.ModelForm):
         label=ugettext_lazy('Cell phone'),
         help_text=ugettext_lazy('For contact at event date.'))
     born = forms.DateField(
-        label=ugettext_lazy('Birth date'),
-        input_formats='%d/%m/%Y %d/%m/%y'.split(),
-        help_text=ugettext_lazy('Write in international format (DD/MM/YYYY).'))
+        label=ugettext_lazy('Birth date'))
     shirt_size = forms.ChoiceField(
         label=ugettext_lazy('Shirt size'),
         choices=tuple(map(lambda a: (a, a), 'P M G GG GGG'.split())))
@@ -118,11 +117,13 @@ class SubscriptionForm(forms.ModelForm):
         self.fields['agreed'].label = label
 
     def _add_age_warning(self, event):
-        if not event.min_age:
-            return
-        when = formats.date_format(event.starts_at, 'DATE_FORMAT').lower()
-        warning = ugettext('You must be %(age)d or older at %(when)s.') % {'age': event.min_age, 'when': when}
-        self.fields['born'].help_text += ' ' + warning
+        msg = []
+        if event.min_age:
+            when = formats.date_format(event.starts_at, 'DATE_FORMAT').lower()
+            msg.append(ugettext('You must be %(age)d or older at %(when)s.') % {'age': event.min_age, 'when': when})
+        msg.append(ugettext('Write in format:'))
+        msg.append(get_format('DATE_INPUT_FORMATS')[0].replace('%', ''))
+        self.fields['born'].help_text += ' '.join(msg)
 
 
 class PartialPayForm(forms.Form):
