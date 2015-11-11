@@ -3,12 +3,11 @@
 # This file is distributed under the same license as the esupa package.
 # Ekevoo <ekevoo@gmail.com>, 2015.
 #
-#, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: 0.3.0.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-11-10 02:54-0200\n"
+"POT-Creation-Date: 2015-11-11 03:48-0200\n"
 "PO-Revision-Date: 2015-08-09 16:00-0400\n"
 "Last-Translator: Ekevoo\n"
 "Language-Team: Portuguese (Brazil) <pt_BR@li.org>\n"
@@ -22,85 +21,81 @@ msgstr ""
 msgid "esupa - Event Subscription and Payment"
 msgstr "esupa - Event Subscription and Payment"
 
-#: forms.py:45
+#: forms.py:46
 msgid "Full name"
 msgstr "Nome completo"
 
-#: forms.py:46
+#: forms.py:47
 msgid "As in legal documentation."
 msgstr "Conforme documentação legal."
 
-#: forms.py:48
+#: forms.py:49
 msgid "ID"
 msgstr "Registro geral (RG)"
 
-#: forms.py:49
+#: forms.py:50
 msgid "Type of document and its number."
 msgstr ""
 "Informe número e órgão expeditor. Caso não tenha RG, coloque o número de "
 "outro documento, como CNH ou Passaporte."
 
-#: forms.py:51
+#: forms.py:52
 msgid "Badge"
 msgstr "Crachá"
 
-#: forms.py:52
+#: forms.py:53
 msgid "Name to be printed on con badge."
 msgstr "O nome que será impresso no seu crachá (badge)."
 
-#: forms.py:54
+#: forms.py:55
 msgid "E-mail"
 msgstr ""
 
-#: forms.py:55
+#: forms.py:56
 msgid "For contact before event date."
 msgstr "Para contato até o dia do Abando."
 
-#: forms.py:57
+#: forms.py:58
 msgid "Cell phone"
 msgstr "Telefone celular"
 
-#: forms.py:58
+#: forms.py:59
 msgid "For contact at event date."
 msgstr "Em caso de desencontro no dia do Abando, vamos telefonar esse número."
 
-#: forms.py:60
+#: forms.py:61
 msgid "Birth date"
 msgstr "Data de nascimento"
 
-#: forms.py:62
-msgid "Write in international format (DD/MM/YYYY)."
-msgstr "Informe no formato DD/MM/AAAA."
-
-#: forms.py:64
+#: forms.py:63
 msgid "Shirt size"
 msgstr "Tamanho da camiseta"
 
-#: forms.py:67
+#: forms.py:66
 msgid "Blood type"
 msgstr "Tipo sanguíneo"
 
-#: forms.py:70
+#: forms.py:69
 msgid "Only if you're sure, blood type and Rh factor, such as O+, AB−, etc."
 msgstr "Apenas se souber, informe tipo e fator Rh, por exemplo, O+, AB−, etc."
 
-#: forms.py:72
+#: forms.py:71
 msgid "Do you have private health plan coverage in the region?"
 msgstr "Possui plano de saúde particular?"
 
-#: forms.py:75
+#: forms.py:74
 msgid "Emergency contact"
 msgstr "Contato para emergências"
 
-#: forms.py:77
+#: forms.py:76
 msgid "Nome, relationship, and phone number with area code."
 msgstr "Informe nome, relação, e número de telefone (com DDD)."
 
-#: forms.py:79
+#: forms.py:78
 msgid "Routine and emergency medical information"
 msgstr "Informações médicas rotineiras e de emergência"
 
-#: forms.py:83
+#: forms.py:82
 msgid ""
 "Routine medication, crisis medication, blood pressure, diabetes, breathing "
 "conditions, heart conditions, food or medication allergies, any sort of "
@@ -111,83 +106,87 @@ msgstr ""
 "medicamentosas), qualquer problema ou condição que necessite de cuidado "
 "especial."
 
-#: forms.py:85
+#: forms.py:84
 msgid "Optional"
 msgstr "Opcional"
 
-#: forms.py:86
+#: forms.py:85
 msgid "Read and agreed to [terms and conditions]."
 msgstr "Li e concordo com o [regulamento]."
 
-#: forms.py:105
+#: forms.py:104
 #, python-format
 msgid "Must be born until %(date)s."
 msgstr "Somente nascidos até %(date)s."
 
-#: forms.py:124
+#: forms.py:123
 #, python-format
 msgid "You must be %(age)d or older at %(when)s."
 msgstr "Você deverá ter %(age)d anos ou mais no dia %(when)s."
 
-#: forms.py:130
+#: forms.py:124
+msgid "Write in format:"
+msgstr "Use o formato:"
+
+#: forms.py:131
 msgid "Amount to be paid"
 msgstr "Quantidade a ser paga"
 
-#: forms.py:131
+#: forms.py:132
 msgid "You can pay partially to combine different payment methods."
 msgstr ""
 "Com o pagamento parcial você pode combinar diferentes formas de pagamento."
 
 #. Translators: This is only displayed in the Django Admin page.
-#: models.py:33
+#: models.py:34
 msgid "To avoid name clashes, these slugs are not allowed: "
 msgstr "Para evitar conflitos de nome, estes slugs são proibidos: "
 
-#: models.py:88
+#: models.py:89
 msgid "New"
 msgstr "Nova"
 
-#: models.py:89
+#: models.py:90
 msgid "Filled"
 msgstr "Preenchida"
 
-#: models.py:90
+#: models.py:91
 msgid "Queued for pay"
 msgstr "Em fila para poder pagar"
 
-#: models.py:91
+#: models.py:92
 msgid "Expecting payment"
 msgstr "Aguardando pagamento"
 
-#: models.py:92
+#: models.py:93
 msgid "Verifying payment"
 msgstr "Verificando pagamento"
 
-#: models.py:93
+#: models.py:94
 msgid "Partially paid"
 msgstr "Parcialmente paga"
 
-#: models.py:94
+#: models.py:95
 msgid "Unpaid staff"
 msgstr "Tripulante não pago"
 
-#: models.py:95
+#: models.py:96
 msgid "Confirmed"
 msgstr "Confirmada"
 
-#: models.py:96
+#: models.py:97
 msgid "Checking data"
 msgstr "Verificando dados"
 
-#: models.py:97
+#: models.py:98
 msgid "Rejected"
 msgstr "Rejeitada"
 
-#: notify.py:83
+#: notify.py:71
 msgid "Payment Available"
 msgstr "Pagamento Liberado"
 
-#: notify.py:84
+#: notify.py:72
 msgid ""
 "Your subscription may be paid now. After payment is confirmed, the spot is "
 "yours."
@@ -195,11 +194,11 @@ msgstr ""
 "Sua inscrição está pronta para ser paga. Após o pagamento, ela será "
 "confirmada, e sua vaga estará garantida."
 
-#: notify.py:89
+#: notify.py:77
 msgid "Payment Expired"
 msgstr "Pagamento Vencido"
 
-#: notify.py:90
+#: notify.py:78
 #, python-format
 msgid ""
 "Your %d hour deadline was missed and you've been moved off the payment queue."
@@ -207,43 +206,60 @@ msgstr ""
 "O seu prazo de %d horas para pagar venceu e você foi retirado da fila de "
 "pagamento."
 
-#: notify.py:94
+#: notify.py:82
 msgid "Subscription Denied"
 msgstr "Inscrição Negada"
 
-#: notify.py:95
+#: notify.py:83
 msgid "Your data has been verified and your subscription has been denied."
 msgstr "Seus dados foram verificados e sua inscrição foi negada."
 
-#: notify.py:99
+#: notify.py:87
 msgid "Subscription Confirmed"
 msgstr "Inscriçao Confirmada"
 
-#: notify.py:100
+#: notify.py:88
 msgid "Welcome! Your subscription is confirmed. :)"
 msgstr "Bem vindo! Sua inscrição está confirmada. :)"
 
-#: notify.py:104
+#: notify.py:92
 msgid "Payment Cancelled"
 msgstr "Pagamento Cancelado"
 
-#: notify.py:105
+#: notify.py:93
 msgid "The payment processor has cancelled your payment."
 msgstr "O seu pagamento foi cancelado pela operadora de pagamento."
 
-#: payment/deposit.py:33 templates/esupa/deposit.html:10
+#: notify.py:98
+msgid "Subscription Saved"
+msgstr "Inscrição Salva"
+
+#: notify.py:99
+msgid "Your changes were saved."
+msgstr "Suas alterações foram salvas"
+
+#: notify.py:101
+#, python-format
+msgid "Your subscription is now: %s"
+msgstr "Sua inscrição agora está: %s"
+
+#: notify.py:103
+msgid "Should you need to make any further updates go to:"
+msgstr ""
+
+#: payment/deposit.py:34 templates/esupa/deposit.html:10
 msgid "Bank Transfer"
 msgstr "Depósito Bancário"
 
-#: payment/deposit.py:76
+#: payment/deposit.py:80
 msgid "Amount Transferred"
 msgstr "Valor depositado"
 
-#: payment/deposit.py:77
+#: payment/deposit.py:81
 msgid "Receipt"
 msgstr "Comprovante"
 
-#: payment/deposit.py:82
+#: payment/deposit.py:86
 #, python-format
 msgid ""
 "Transfer up to R$ %(price)s to this bank account and send a receipt image.\n"
@@ -301,59 +317,59 @@ msgstr " Nos vemos no %(name)s! "
 msgid "Edit"
 msgstr "Editar"
 
-#: templates/esupa/view.html:23
+#: templates/esupa/view.html:22
 msgid "Legal name:"
 msgstr "Nome legal:"
 
-#: templates/esupa/view.html:24
+#: templates/esupa/view.html:23
 msgid "Document:"
 msgstr "Documento:"
 
-#: templates/esupa/view.html:25
+#: templates/esupa/view.html:24
 msgid "Badge:"
 msgstr "Crachá:"
 
-#: templates/esupa/view.html:26
+#: templates/esupa/view.html:25
 msgid "Email:"
 msgstr "Email:"
 
-#: templates/esupa/view.html:27
+#: templates/esupa/view.html:26
 msgid "Mobile:"
 msgstr "Celular:"
 
-#: templates/esupa/view.html:28
+#: templates/esupa/view.html:27
 msgid "Birth date:"
 msgstr "Nascimento:"
 
-#: templates/esupa/view.html:29
+#: templates/esupa/view.html:28
 msgid "Shirt:"
 msgstr "Camiseta:"
 
-#: templates/esupa/view.html:30
+#: templates/esupa/view.html:29
 msgid "Blood type:"
 msgstr "Tipo sanguíneo:"
 
-#: templates/esupa/view.html:31
+#: templates/esupa/view.html:30
 msgid "Local health coverage?"
 msgstr "Possui plano de saúde?"
 
-#: templates/esupa/view.html:32
+#: templates/esupa/view.html:31
 msgid "Emergency contact:"
 msgstr "Contato de emergência:"
 
-#: templates/esupa/view.html:33
+#: templates/esupa/view.html:32
 msgid "Medical information:"
 msgstr "Informações médicas rotineiras e de emergência:"
 
-#: templates/esupa/view.html:35
+#: templates/esupa/view.html:34
 msgid "Optionals:"
 msgstr "Opcionais:"
 
-#: templates/esupa/view.html:36
+#: templates/esupa/view.html:35
 msgid "none"
 msgstr "nenhum"
 
-#: templates/esupa/view.html:38
+#: templates/esupa/view.html:37
 #, python-format
 msgid ""
 "\n"
@@ -365,27 +381,27 @@ msgstr ""
 "a>?\n"
 "                    "
 
-#: templates/esupa/view.html:43
+#: templates/esupa/view.html:42
 msgid "Subscription value:"
 msgstr "Valor da inscrição:"
 
-#: templates/esupa/view.html:45
+#: templates/esupa/view.html:44
 msgid "Confirmed payments:"
 msgstr "Pagamentos confirmados:"
 
-#: templates/esupa/view.html:50
+#: templates/esupa/view.html:49
 msgid "Total:"
 msgstr "Total:"
 
-#: templates/esupa/view.html:54
+#: templates/esupa/view.html:53
 msgid "Payments under review:"
 msgstr "Pagamentos sendo verificados:"
 
-#: templates/esupa/view.html:59
+#: templates/esupa/view.html:58
 msgid "See attachment."
 msgstr "Ver anexo."
 
-#: templates/esupa/view.html:65
+#: templates/esupa/view.html:64
 msgid "Pay using"
 msgstr "Pagar seu registro usando"
 
@@ -412,6 +428,6 @@ msgstr "Nenhum evento cadastrado. Crie um em /admin/"
 msgid "Unknown event %s."
 msgstr "Evento desconhecido %s."
 
-#: views.py:141
+#: views.py:143
 msgid "No such document."
 msgstr "Documento não existe."
