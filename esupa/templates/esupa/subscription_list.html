@@ -2,10 +2,18 @@
 <html>
 <head lang="en">
     <meta charset="UTF-8">
-    <title>Event {{event.id}}: {{event.name}}</title>
+    <title>Event {{ event.id }}: {{ event.name }}</title>
+    <style rel="stylesheet" type="text/css">
+
+        .acceptedEqualsFalse {
+            background: rgba(128, 128, 128, 0.75);
+            color: rgba(0, 0, 0, 0.25);
+        }
+
+    </style>
 </head>
 <body>
-<h1>{{event.name}}</h1>
+<h1>{{ event.name }}</h1>
 <table border="1" cellspacing="0">
     <tr>
         <th>Starts at</th>
@@ -15,59 +23,59 @@
         <th>Openings</th>
     </tr>
     <tr>
-        <td>{{event.starts_at}}</td>
-        <td>{{event.capacity}}</td>
-        <td>{{event.num_confirmed}}</td>
-        <td>{{event.num_pending}}</td>
-        <td>{{event.num_openings}}</td>
+        <td>{{ event.starts_at }}</td>
+        <td>{{ event.capacity }}</td>
+        <td>{{ event.num_confirmed }}</td>
+        <td>{{ event.num_pending }}</td>
+        <td>{{ event.num_openings }}</td>
     </tr>
 </table>
-    <h2>Subscriptions</h2>
-    <table border="1" cellspacing="0">
-        <tr>
-            <th>id</th>
-            <th>Badge</th>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Doc</th>
-            <th>Phone</th>
-            <th>State</th>
-            <th>Price</th>
-            <th>Transactions</th>
-        </tr>
-        {% for s in subscription_list %}
+<h2>Subscriptions</h2>
+<table border="1" cellspacing="0">
+    <tr>
+        <th>id</th>
+        <th>Badge</th>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Doc</th>
+        <th>Phone</th>
+        <th>State</th>
+        <th>Price</th>
+        <th>Transactions</th>
+    </tr>
+    {% for s in subscription_list %}
         <tr bgcolor="{% cycle 'lightgrey' 'white' %}">
-            <td>{{s.id}}</td>
-            <td><a href="{% url 'esupa-check-docs' s.id %}">{{s.badge}}</a></td>
-            <td>{{s.full_name}}</td>
-            <td>{{s.email}}</td>
-            <td>{{s.document}}</td>
-            <td>{{s.phone}}</td>
-            <td>{{s.str_state}}</td>
-            <td>{{s.price}}</td>
+            <td>{{ s.id }}</td>
+            <td><a href="{% url 'esupa-check-docs' s.id %}">{{ s.badge }}</a></td>
+            <td>{{ s.full_name }}</td>
+            <td>{{ s.email }}</td>
+            <td>{{ s.document }}</td>
+            <td>{{ s.phone }}</td>
+            <td>{{ s.str_state }}</td>
+            <td>{{ s.price }}</td>
             <td>
                 <table border="1" cellspacing="0">
                     {% for t in s.transaction_set.iterator %}
-                    <tr>
-                        <td>{{t.id}}</td>
-                        <td>{{t.amount}}</td>
-                        <td title="{{t.created_at}}">{{t.str_method}}</td>
-                        <td title="{{t.filled_at}}">
-                            {% if t.mimetype %}
-                            <a href="{% url 'esupa-trans-doc' t.id %}">&bull;&bull;&bull;</a>
-                            {% else %}
-                            &mdash;
-                            {% endif %}
-                        </td>
-                        <td title="{{t.ended_at}}">
-                            {% if not t.ended_at %}?{% elif t.accepted %}✔{% else %}✘{% endif %}
-                        </td>
-                    </tr>
+                        <tr>
+                            <td>{{ t.id }}</td>
+                            <td class="acceptedEquals{{ t.accepted }}">{{ t.amount }}</td>
+                            <td title="{{ t.created_at }}">{{ t.str_method }}</td>
+                            <td title="{{ t.filled_at }}">
+                                {% if t.mimetype %}
+                                    <a href="{% url 'esupa-trans-doc' t.id %}">&bull;&bull;&bull;</a>
+                                {% else %}
+                                    &mdash;
+                                {% endif %}
+                            </td>
+                            <td title="{{ t.ended_at }}">
+                                {% if not t.ended_at %}?{% elif t.accepted %}✔{% else %}✘{% endif %}
+                            </td>
+                        </tr>
                     {% endfor %}
                 </table>
             </td>
         </tr>
-        {% endfor %}
-    </table>
+    {% endfor %}
+</table>
 </body>
 </html>
