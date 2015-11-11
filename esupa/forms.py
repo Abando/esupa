@@ -93,7 +93,7 @@ class SubscriptionForm(forms.ModelForm):
         forms.ModelForm.__init__(self, *args, **kwargs)
         subscription = self.instance
         event = subscription.event
-        self.fields['optionals'].queryset = event.optional_set
+        self.fields['optionals'].queryset = event.optional_set.all()
         self._add_agreement_link(event)
         self._add_age_warning(event)
         self.max_born = event.max_born
