@@ -14,7 +14,7 @@
 __author__ = 'Ekevoo'
 __copyright__ = 'Copyright 2015, Ekevoo.com'
 __license__ = 'Apache License, Version 2.0'
-__version__ = '0.3.1.1'  # PEP386
+__version__ = '0.4'  # PEP386
 
 # https://docs.djangoproject.com/en/1.8/ref/applications/#application-configuration
 default_app_config = __name__ + '.apps.EsupaConfig'
