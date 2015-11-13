@@ -100,7 +100,7 @@ class Notifier:
             "",
             ugettext("Your subscription is now: %s") % self.s.str_state,
             "",
-            ugettext("Should you need to make any further updates go to:"),
+            ugettext("Should you need to make any further updates, go to:"),
             build_absolute_uri(reverse(view.name, args=[self.s.event.slug])))
         if old_state != self.s.state:
             new_state = self.s.state
