@@ -132,3 +132,9 @@ class BatchNotifier:
             Notifier(subscription).expired()
         for subscription in self._can_pay:
             Notifier(subscription).can_pay()
+
+    def __repr__(self):
+        if self._expired or self._can_pay:
+            return "<BatchNotifier with %d, %d>" % (len(self._expired), len(self._can_pay))
+        else:
+            return "<BatchNotifier, empty>"

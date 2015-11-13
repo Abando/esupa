@@ -25,8 +25,8 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from django.utils.timezone import now
 
-from .notify import BatchNotifier
 from .models import Event, QueueContainer, Subscription, SubsState
+from .notify import BatchNotifier
 
 log = getLogger(__name__)
 
@@ -120,6 +120,7 @@ def _update_all_subscriptions(event, notify):
     if created:
         return
     queue = loads(qc.data)
+    log.debug("Queue was: %s", queue)
     position = 0
     for sid in list(queue):  # iterate over a copy
         try:
@@ -128,12 +129,12 @@ def _update_all_subscriptions(event, notify):
             _remove(queue, sid)
             continue
         if subscription.state == SubsState.EXPECTING_PAY and not subscription.waiting:
-            _remove(queue, sid)
             subscription.state = SubsState.ACCEPTABLE
             subscription.wait_until = None
             subscription.position = None
             subscription.save()
             notify.expired(subscription)
+            _remove(queue, sid)
         elif subscription.state == SubsState.QUEUED_FOR_PAY and position < event.capacity:
             subscription.state = SubsState.EXPECTING_PAY
             subscription.waiting = True
@@ -141,20 +142,34 @@ def _update_all_subscriptions(event, notify):
             subscription.save()
             notify.can_pay(subscription)
             position += 1
+        elif subscription.state < SubsState.QUEUED_FOR_PAY:
+            if subscription.position or subscription.waiting:
+                subscription.waiting = False
+                subscription.position = None
+                subscription.save()
+            _remove(queue, sid)
         else:
             if subscription.position != position:
                 subscription.position = position
                 subscription.save()
             position += 1
-    subscriptions = Subscription.objects.filter(event=event)
-    subscriptions.exclude(id__in=queue).update(position=None)
+    for subscription in Subscription.objects.filter(event=event).exclude(id__in=queue):
+        if subscription.state >= SubsState.UNPAID_STAFF:
+            subscription.position = _add(queue, subscription.id)
+            subscription.save()
+        elif subscription.position is not None:
+            subscription.position = None
+            subscription.save()
+    log.debug("Queue is:  %s", queue)
     qc.data = dumps(queue)
     qc.save()
 
 
 def cron():
-    for event in Event.objects.filter(starts_at__gt=now()).iterable():
+    for event in Event.objects.filter(starts_at__gt=now()):
+        log.info("Running cron with event: %s", event)
         notify = BatchNotifier()
         with _lock[event.id], transaction.atomic():
             _update_all_subscriptions(event, notify)
+        log.info("About to send notifications: %s", notify)
         notify.send_notifications()

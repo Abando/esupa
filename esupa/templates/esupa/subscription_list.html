@@ -31,9 +31,17 @@
     </tr>
 </table>
 <h2>Subscriptions</h2>
+
+<p>
+    Sort by:
+    <a href="?">state</a>,
+    <a href="?sort=sid">id</a>,
+    <a href="?sort=pos">position</a>.
+</p>
 <table border="1" cellspacing="0">
     <tr>
         <th>id</th>
+        <th>p</th>
         <th>Badge</th>
         <th>Name</th>
         <th>Email</th>
@@ -46,6 +54,7 @@
     {% for s in subscription_list %}
         <tr bgcolor="{% cycle 'lightgrey' 'white' %}">
             <td>{{ s.id }}</td>
+            <td>{{ s.position }}</td>
             <td><a href="{% url 'esupa-check-docs' s.id %}">{{ s.badge }}</a></td>
             <td>{{ s.full_name }}</td>
             <td>{{ s.email }}</td>

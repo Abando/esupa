@@ -148,11 +148,14 @@ def transaction_document(request: HttpRequest, tid) -> HttpResponse:
 
 
 @named('esupa-cron')
-def cron_view(_, secret) -> HttpResponse:
-    if secret != settings.ESUPA_CRON_SECRET:
+def cron_view(request: HttpRequest, secret) -> HttpResponse:
+    if request.user and request.user.is_staff:
+        return cron() or BLANK_PAGE
+    elif secret != getattr(settings, 'ESUPA_CRON_SECRET', None):
+        cron()
+        return BLANK_PAGE
+    else:
         raise SuspiciousOperation
-    cron()
-    return BLANK_PAGE
 
 
 @named('esupa-pay')
@@ -214,6 +217,11 @@ class SubscriptionList(EsupaListView):
     model = Subscription
     name = 'esupa-check-event'
     _event = None
+    sort_dict = {
+        'state': '-state',
+        'sid': 'id',
+        'pos': 'position',
+    }
 
     @property
     def event(self) -> Event:
@@ -225,7 +233,11 @@ class SubscriptionList(EsupaListView):
         return self._event
 
     def get_queryset(self):
-        return self.event.subscription_set.order_by('-state')
+        queryset = self.event.subscription_set
+        sort = self.request.GET.get('sort')
+        if sort == 'pos':
+            queryset = queryset.filter(position__isnull=False)
+        return queryset.order_by(self.sort_dict.get(sort, '-state'))
 
     def get_context_data(self, **kwargs):
         return super().get_context_data(event=self.event, **kwargs)
