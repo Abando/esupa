@@ -210,7 +210,7 @@ class Subscription(models.Model):
 
     @property
     def waiting(self) -> bool:
-        return False if self.wait_until is None else self.wait_until < now()
+        return False if self.wait_until is None else self.wait_until > now()
 
     @waiting.setter
     def waiting(self, value):
