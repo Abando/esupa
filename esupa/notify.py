@@ -116,7 +116,7 @@ class Notifier:
             notification,
             build_absolute_uri(reverse(TransactionList.name, args=[self.s.id])),
             "",
-            "All in %s:" % self.e.name,
+            "All in %s:" % self.s.event.name,
             build_absolute_uri(reverse(SubscriptionList.name, args=[self.s.event.slug])))
 
 
