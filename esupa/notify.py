@@ -18,6 +18,7 @@ from threading import Thread
 from django.contrib.auth.models import User
 from django.core.mail import EmailMessage
 from django.core.urlresolvers import reverse
+from django.utils.timesince import timeuntil
 from django.utils.translation import ugettext
 
 from .models import Event, Subscription, SubsState
@@ -52,6 +53,18 @@ class EventNotifier:
 
     def sales_closed(self):
         self.send('Sales closed!', 'Sales closed for event #%d (%s)' % (self.e.id, self.e.name))
+
+    def toggled(self):
+        def converter(name, are_open, when_toggle):
+            when_toggle = " for further %s" % timeuntil(when_toggle) if when_toggle else ""
+            are_open = "OPEN" if are_open else "NOT open"
+            return "%s are %s%s." % (name, are_open, when_toggle)
+
+        self.send("Event toggled!", *map(converter, *zip(
+            ("Subscriptions", self.e.subs_open, self.e.subs_toggle),
+            ("Sales", self.e.sales_open, self.e.sales_toggle),
+            ("Partial Payments", self.e.partial_payment_open, self.e.partial_payment_toggle),
+        )))
 
 
 class Notifier:
@@ -124,14 +137,20 @@ class BatchNotifier:
     def __init__(self):
         self._expired = []
         self._can_pay = []
+        self._event_toggled = None
         self.expired = self._expired.append
         self.can_pay = self._can_pay.append
+
+    def toggled(self, event: Event):
+        self._event_toggled = event
 
     def send_notifications(self):
         for subscription in self._expired:
             Notifier(subscription).expired()
         for subscription in self._can_pay:
             Notifier(subscription).can_pay()
+        if self._event_toggled:
+            EventNotifier(self._event_toggled).toggled()
 
     def __repr__(self):
         if self._expired or self._can_pay:

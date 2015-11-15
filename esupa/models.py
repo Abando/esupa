@@ -115,6 +115,8 @@ class Event(models.Model):
     subs_toggle = models.DateTimeField(null=True, blank=True)
     sales_open = models.BooleanField(default=False)
     sales_toggle = models.DateTimeField(null=True, blank=True)
+    partial_payment_open = models.BooleanField(default=False)
+    partial_payment_toggle = models.DateTimeField(null=True, blank=True)
     deposit_info = models.TextField(blank=True)
     payment_wait_hours = models.IntegerField(default=48)
     data_to_be_checked = models.TextField(blank=True)
@@ -145,13 +147,21 @@ class Event(models.Model):
         else:
             return now().date()
 
-    def cron(self, present):
+    def check_toggles(self, present) -> bool:
+        toggled = False
         if self.subs_toggle and self.subs_toggle < present:
             self.subs_toggle = None
             self.subs_open = not self.subs_open
+            toggled = True
         if self.sales_toggle and self.sales_toggle < present:
             self.sales_toggle = None
             self.sales_open = not self.sales_open
+            toggled = True
+        if self.partial_payment_toggle and self.partial_payment_toggle < present:
+            self.partial_payment_toggle = None
+            self.partial_payment_open = not self.partial_payment_open
+            toggled = True
+        return toggled
 
     def check_occupancy(self):
         if self.sales_open and self.num_openings <= 0:

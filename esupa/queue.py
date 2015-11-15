@@ -116,8 +116,12 @@ def _remove(queue, sid):
 
 def _update_all_subscriptions(event, notify):
     """Oh boy, this will take a while. But it has to be done sometimes."""
-    qc, created = QueueContainer.objects.get_or_create(event=event)
-    if created:
+    if event.check_toggles():
+        event.save()
+        notify.toggled(event)
+    try:
+        qc = QueueContainer.objects.get(event=event)
+    except QueueContainer.DoesNotExist:
         return
     queue = loads(qc.data)
     log.debug("Queue was: %s", queue)
@@ -142,6 +146,9 @@ def _update_all_subscriptions(event, notify):
             subscription.save()
             notify.can_pay(subscription)
             position += 1
+        elif subscription.state == SubsState.PARTIALLY_PAID and not event.partial_payment_open:
+            # TODO: check position and fix state accordingly
+            raise NotImplementedError
         elif subscription.state < SubsState.QUEUED_FOR_PAY:
             if subscription.position or subscription.waiting:
                 subscription.waiting = False
