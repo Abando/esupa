@@ -22,8 +22,11 @@ from django.utils.timezone import now
 from django.utils.translation import ugettext_lazy, ugettext
 
 log = getLogger(__name__)
-PriceField = lambda: models.DecimalField(max_digits=7, decimal_places=2)
 decimal_zero = Decimal('0.00')
+
+
+def _price_field():
+    return models.DecimalField(max_digits=7, decimal_places=2)
 
 
 def slug_blacklist_validator(target):
@@ -105,7 +108,7 @@ class Event(models.Model):
     agreement_url = models.URLField(blank=True)
     starts_at = models.DateTimeField()
     min_age = models.IntegerField(default=0)
-    price = PriceField()
+    price = _price_field()
     capacity = models.IntegerField()
     reveal_openings_under = models.IntegerField(default=0, blank=True)
     subs_open = models.BooleanField(default=False)
@@ -161,7 +164,7 @@ class Event(models.Model):
 class Optional(models.Model):
     event = models.ForeignKey(Event)
     name = models.CharField(max_length=20)
-    price = PriceField()
+    price = _price_field()
 
     def __str__(self):
         return self.name
@@ -253,7 +256,7 @@ class Subscription(models.Model):
 
 class Transaction(models.Model):
     subscription = models.ForeignKey(Subscription)
-    amount = PriceField()
+    amount = _price_field()
     created_at = models.DateTimeField(auto_now=True)
     method = models.SmallIntegerField(default=0)
     remote_identifier = models.CharField(max_length=50, blank=True)
